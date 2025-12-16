@@ -24,6 +24,10 @@ contract RegistroPropiedadesHerencia {
     mapping(uint256 => Propiedad) public propiedades;
     mapping(uint256 => Distribucion[]) public herenciaPorPropiedad;
 
+    // Participaciones por propiedad
+    mapping(uint256 => mapping(address => uint256)) public participacionesPorPropiedad;
+    mapping(uint256 => address[]) public walletsConParticipacion;
+
     IPersonas public registroCivil;
 
     // Eventos
@@ -54,6 +58,7 @@ contract RegistroPropiedadesHerencia {
         require(_ciHerederos.length == _porcentajes.length, "Datos inconsistentes");
 
         delete herenciaPorPropiedad[_idPropiedad]; // limpiar herencia previa
+        delete walletsConParticipacion[_idPropiedad]; // limpiar lista previa
 
         uint256 total = 0;
         for (uint256 i = 0; i < _ciHerederos.length; i++) {
@@ -66,7 +71,7 @@ contract RegistroPropiedadesHerencia {
                 porcentaje: _porcentajes[i]
             }));
 
-            // Guardar participacion propuesta
+            // Guardar participación propuesta
             participacionesPorPropiedad[_idPropiedad][wallet] = _porcentajes[i];
             walletsConParticipacion[_idPropiedad].push(wallet);
 
@@ -90,11 +95,9 @@ contract RegistroPropiedadesHerencia {
         // Distribuir la propiedad entre los herederos
         for (uint256 i = 0; i < herenciaPorPropiedad[_idPropiedad].length; i++) {
             Distribucion memory dist = herenciaPorPropiedad[_idPropiedad][i];
-            // En este ejemplo, simplemente emitimos evento (no fraccionamos propiedad real)
             emit PropiedadTransferida(_idPropiedad, ciAnterior, dist.ciHeredero, dist.walletHeredero);
         }
 
-        // Opcional: marcar propiedad como transferida
         prop.enHerencia = false;
     }
 
@@ -107,5 +110,15 @@ contract RegistroPropiedadesHerencia {
     // Consultar herencia definida (lista detallada)
     function obtenerHerencia(uint256 _idPropiedad) public view returns (Distribucion[] memory) {
         return herenciaPorPropiedad[_idPropiedad];
+    }
+
+    // Consultar porcentaje de participación de un wallet en una propiedad
+    function obtenerParticipacion(uint256 _idPropiedad, address _wallet) public view returns (uint256) {
+        return participacionesPorPropiedad[_idPropiedad][_wallet];
+    }
+
+    // Consultar todas las wallets con participación en una propiedad
+    function obtenerWalletsConParticipacion(uint256 _idPropiedad) public view returns (address[] memory) {
+        return walletsConParticipacion[_idPropiedad];
     }
 }

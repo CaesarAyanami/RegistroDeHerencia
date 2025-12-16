@@ -54,35 +54,19 @@
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.19;\r\n\r\ninterface IPersonas {\r\n    function obtenerIdPorCi(string memory _ci) external view returns (uint256);\r\n    function obtenerIdentidad(uint256 _id) external view returns (string memory, address);\r\n}\r\n",
-  "sourcePath": "C:\\Users\\Cesar\\Documents\\GitHub\\RegistroDeHerencia\\BlockChain\\RegistroDeHerencia\\contracts\\IPersonas.sol",
+  "sourcePath": "C:\\Users\\Usuario\\Desktop\\RegistroDeHerencia\\RegistroDeHerencia\\BlockChain\\RegistroDeHerencia\\contracts\\IPersonas.sol",
   "ast": {
     "absolutePath": "project:/contracts/IPersonas.sol",
     "exportedSymbols": {
-<<<<<<< HEAD
-      "IPersonas": [648]
-=======
-      "IPersonas": [
-        373
-      ]
->>>>>>> parent of ce4c57b (funcionalidades agregadas y estilos a personas y propiedad)
+      "IPersonas": [435]
     },
-    "id": 649,
+    "id": 436,
     "license": "MIT",
     "nodeType": "SourceUnit",
     "nodes": [
       {
-<<<<<<< HEAD
-        "id": 631,
+        "id": 418,
         "literals": ["solidity", "^", "0.8", ".19"],
-=======
-        "id": 356,
-        "literals": [
-          "solidity",
-          "^",
-          "0.8",
-          ".19"
-        ],
->>>>>>> parent of ce4c57b (funcionalidades agregadas y estilos a personas y propiedad)
         "nodeType": "PragmaDirective",
         "src": "33:24:1"
       },
@@ -93,22 +77,15 @@
         "contractDependencies": [],
         "contractKind": "interface",
         "fullyImplemented": false,
-<<<<<<< HEAD
-        "id": 648,
-        "linearizedBaseContracts": [648],
-=======
-        "id": 373,
-        "linearizedBaseContracts": [
-          373
-        ],
->>>>>>> parent of ce4c57b (funcionalidades agregadas y estilos a personas y propiedad)
+        "id": 435,
+        "linearizedBaseContracts": [435],
         "name": "IPersonas",
         "nameLocation": "71:9:1",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "functionSelector": "8aa64c5e",
-            "id": 638,
+            "id": 425,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -116,17 +93,17 @@
             "nameLocation": "97:14:1",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 634,
+              "id": 421,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 633,
+                  "id": 420,
                   "mutability": "mutable",
                   "name": "_ci",
                   "nameLocation": "126:3:1",
                   "nodeType": "VariableDeclaration",
-                  "scope": 638,
+                  "scope": 425,
                   "src": "112:17:1",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -135,7 +112,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 632,
+                    "id": 419,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "112:6:1",
@@ -150,17 +127,17 @@
               "src": "111:19:1"
             },
             "returnParameters": {
-              "id": 637,
+              "id": 424,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 636,
+                  "id": 423,
                   "mutability": "mutable",
                   "name": "",
                   "nameLocation": "-1:-1:-1",
                   "nodeType": "VariableDeclaration",
-                  "scope": 638,
+                  "scope": 425,
                   "src": "154:7:1",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -169,7 +146,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 635,
+                    "id": 422,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "154:7:1",
@@ -183,7 +160,7 @@
               ],
               "src": "153:9:1"
             },
-            "scope": 648,
+            "scope": 435,
             "src": "88:75:1",
             "stateMutability": "view",
             "virtual": false,
@@ -191,7 +168,7 @@
           },
           {
             "functionSelector": "fba82d1d",
-            "id": 647,
+            "id": 434,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -199,17 +176,17 @@
             "nameLocation": "178:16:1",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 641,
+              "id": 428,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 640,
+                  "id": 427,
                   "mutability": "mutable",
                   "name": "_id",
                   "nameLocation": "203:3:1",
                   "nodeType": "VariableDeclaration",
-                  "scope": 647,
+                  "scope": 434,
                   "src": "195:11:1",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -218,7 +195,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 639,
+                    "id": 426,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "195:7:1",
@@ -233,17 +210,17 @@
               "src": "194:13:1"
             },
             "returnParameters": {
-              "id": 646,
+              "id": 433,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 643,
+                  "id": 430,
                   "mutability": "mutable",
                   "name": "",
                   "nameLocation": "-1:-1:-1",
                   "nodeType": "VariableDeclaration",
-                  "scope": 647,
+                  "scope": 434,
                   "src": "231:13:1",
                   "stateVariable": false,
                   "storageLocation": "memory",
@@ -252,7 +229,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 642,
+                    "id": 429,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "231:6:1",
@@ -265,12 +242,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 645,
+                  "id": 432,
                   "mutability": "mutable",
                   "name": "",
                   "nameLocation": "-1:-1:-1",
                   "nodeType": "VariableDeclaration",
-                  "scope": 647,
+                  "scope": 434,
                   "src": "246:7:1",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -279,7 +256,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 644,
+                    "id": 431,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "246:7:1",
@@ -294,14 +271,14 @@
               ],
               "src": "230:24:1"
             },
-            "scope": 648,
+            "scope": 435,
             "src": "169:86:1",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 649,
+        "scope": 436,
         "src": "61:197:1",
         "usedErrors": []
       }
@@ -314,11 +291,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.16",
-<<<<<<< HEAD
-  "updatedAt": "2025-12-16T02:51:55.777Z",
-=======
-  "updatedAt": "2025-12-15T12:24:02.554Z",
->>>>>>> parent of ce4c57b (funcionalidades agregadas y estilos a personas y propiedad)
+  "updatedAt": "2025-12-16T05:29:17.533Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},
