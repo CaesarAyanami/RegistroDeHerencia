@@ -32,6 +32,11 @@ const HerenciaComponent = () => {
           await window.ethereum.request({ method: "eth_requestAccounts" });
           const accounts = await web3.eth.getAccounts();
           setAccount(accounts[0]);
+        try {
+          const web3 = new Web3(window.ethereum);
+          await window.ethereum.request({ method: "eth_requestAccounts" });
+          const accounts = await web3.eth.getAccounts();
+          setAccount(accounts[0]);
 
           const networkId = await web3.eth.net.getId();
           const deployedNetwork = HerenciaABI.networks[networkId];
@@ -50,7 +55,7 @@ const HerenciaComponent = () => {
           console.error("Error init:", error);
         }
       } else {
-        alert("MetaMask no detectado");
+        showNotification("MetaMask no detectado.", 'error');
       }
     };
     init();
