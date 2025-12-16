@@ -54,19 +54,35 @@
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.19;\r\n\r\ninterface IPersonas {\r\n    function obtenerIdPorCi(string memory _ci) external view returns (uint256);\r\n    function obtenerIdentidad(uint256 _id) external view returns (string memory, address);\r\n}\r\n",
-  "sourcePath": "C:\\Users\\Usuario\\Desktop\\RegistroDeHerencia\\RegistroDeHerencia\\BlockChain\\RegistroDeHerencia\\contracts\\IPersonas.sol",
+  "sourcePath": "C:\\Users\\Cesar\\Documents\\GitHub\\RegistroDeHerencia\\BlockChain\\RegistroDeHerencia\\contracts\\IPersonas.sol",
   "ast": {
     "absolutePath": "project:/contracts/IPersonas.sol",
     "exportedSymbols": {
+<<<<<<< HEAD
       "IPersonas": [648]
+=======
+      "IPersonas": [
+        373
+      ]
+>>>>>>> parent of ce4c57b (funcionalidades agregadas y estilos a personas y propiedad)
     },
     "id": 649,
     "license": "MIT",
     "nodeType": "SourceUnit",
     "nodes": [
       {
+<<<<<<< HEAD
         "id": 631,
         "literals": ["solidity", "^", "0.8", ".19"],
+=======
+        "id": 356,
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".19"
+        ],
+>>>>>>> parent of ce4c57b (funcionalidades agregadas y estilos a personas y propiedad)
         "nodeType": "PragmaDirective",
         "src": "33:24:1"
       },
@@ -77,8 +93,15 @@
         "contractDependencies": [],
         "contractKind": "interface",
         "fullyImplemented": false,
+<<<<<<< HEAD
         "id": 648,
         "linearizedBaseContracts": [648],
+=======
+        "id": 373,
+        "linearizedBaseContracts": [
+          373
+        ],
+>>>>>>> parent of ce4c57b (funcionalidades agregadas y estilos a personas y propiedad)
         "name": "IPersonas",
         "nameLocation": "71:9:1",
         "nodeType": "ContractDefinition",
@@ -291,7 +314,11 @@
   },
   "networks": {},
   "schemaVersion": "3.4.16",
+<<<<<<< HEAD
   "updatedAt": "2025-12-16T02:51:55.777Z",
+=======
+  "updatedAt": "2025-12-15T12:24:02.554Z",
+>>>>>>> parent of ce4c57b (funcionalidades agregadas y estilos a personas y propiedad)
   "devdoc": {
     "kind": "dev",
     "methods": {},
