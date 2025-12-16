@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Web3 from "web3";
-import PersonasABI from "../ABI/Persona.json";
+import PersonasABI from "../ABI/Personas.json";
 import { PERSONAS_ADDRESS } from "../config";
 
 export default function DAppPersona() {

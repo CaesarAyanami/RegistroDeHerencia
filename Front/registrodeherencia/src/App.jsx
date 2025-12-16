@@ -2,9 +2,8 @@ import React from "react";
 import Header from "./components/Header";
 import Dashboard from "./components/Dashboard";
 import PersonasComponent from "./components/Personas";
-import Propiedad from "./components/Propiedad"
+import Propiedad from "./components/Propiedad";
 import Heredero from "./components/Heredero";
-
 
 function App() {
   return (
@@ -13,8 +12,8 @@ function App() {
       <main className="p-8">
         <Dashboard />
         <PersonasComponent />
-        <Propiedad/>
-        <Heredero/>
+        <Propiedad />
+        <Heredero />
       </main>
     </div>
   );
