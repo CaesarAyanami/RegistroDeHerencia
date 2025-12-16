@@ -67,7 +67,7 @@ const HerenciaComponent = () => {
           );
         }
       } else {
-        alert("MetaMask no detectado.");
+        alert("MetaMask no detectado");
       }
     };
     init();
