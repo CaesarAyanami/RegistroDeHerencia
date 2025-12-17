@@ -1,7 +1,10 @@
-const Propiedades = artifacts.require("Propiedades");
 const Personas = artifacts.require("Personas");
+const Propiedades = artifacts.require("Propiedades");
 
 module.exports = async function (deployer) {
-  const personas = await Personas.deployed();
-  await deployer.deploy(Propiedades, personas.address);
+  // Recupera la instancia de Personas ya desplegada
+  const personasInstance = await Personas.deployed();
+
+  // Despliega Propiedades pasando la dirección de Personas
+  await deployer.deploy(Propiedades, personasInstance.address);
 };

@@ -5,7 +5,7 @@ contract Personas {
     enum Genero { Masculino, Femenino, Otro }
 
     struct Persona {
-        uint256 id;              // 🔹 Nuevo campo ID dentro del struct
+        uint256 id;
         string nombres;
         string apellidos;
         string cedula;
@@ -16,28 +16,31 @@ contract Personas {
         string direccion;
         string telefono;
         string profesion;
-        address wallet;          // identidad blockchain
+        address wallet;
     }
 
     uint256 private nextId = 1;
     mapping(uint256 => Persona) private personas;
-    mapping(string => uint256) private ciAIdPersona;
+    mapping(bytes32 => uint256) private ciHashAIdPersona; // 🔹 usamos hash de CI
+    uint256[] private idsPersonas; // 🔹 para listar todas las personas
 
-    // Eventos para trazabilidad
+    // Eventos
     event PersonaRegistrada(uint256 id, string cedula, address wallet);
     event PersonaActualizada(uint256 id, string campo);
 
-    // Registro esencial con wallet
+    // Registro esencial
     function registrarPersonaEsencial(
         string memory _cedula,
         string memory _nombres,
         string memory _apellidos,
         address _wallet
     ) public {
-        require(ciAIdPersona[_cedula] == 0, "CI ya registrada");
+        bytes32 ciHash = keccak256(bytes(_cedula));
+        require(ciHashAIdPersona[ciHash] == 0, "CI ya registrada");
+        require(_wallet != address(0), "Wallet invalida");
 
         uint256 id = nextId++;
-        ciAIdPersona[_cedula] = id;
+        ciHashAIdPersona[ciHash] = id;
 
         personas[id] = Persona({
             id: id,
@@ -54,15 +57,16 @@ contract Personas {
             wallet: _wallet
         });
 
+        idsPersonas.push(id);
+
         emit PersonaRegistrada(id, _cedula, _wallet);
     }
 
-    // Registro completo (actualiza persona existente)
+    // Registro completo (no permite cambiar CI)
     function registrarPersona(
         uint256 _id,
         string memory _nombres,
         string memory _apellidos,
-        string memory _cedula,
         Genero _genero,
         uint256 _fechaNacimiento,
         string memory _lugarNacimiento,
@@ -73,13 +77,15 @@ contract Personas {
         address _wallet
     ) public {
         require(_id > 0 && _id < nextId, "ID no valido");
-        require(ciAIdPersona[_cedula] == 0 || ciAIdPersona[_cedula] == _id, "CI duplicada o invalida");
+        require(_wallet != address(0), "Wallet invalida");
 
+        Persona storage p = personas[_id];
+        // 🔹 CI no se cambia, se mantiene la original
         personas[_id] = Persona({
             id: _id,
             nombres: _nombres,
             apellidos: _apellidos,
-            cedula: _cedula,
+            cedula: p.cedula,
             genero: _genero,
             fechaNacimiento: _fechaNacimiento,
             lugarNacimiento: _lugarNacimiento,
@@ -90,19 +96,18 @@ contract Personas {
             wallet: _wallet
         });
 
-        ciAIdPersona[_cedula] = _id;
-
         emit PersonaActualizada(_id, "Registro completo");
     }
 
-    // Funciones de consulta
+    // Consultas
     function obtenerIdPorCi(string memory _ci) public view returns (uint256) {
-        require(ciAIdPersona[_ci] != 0, "CI no registrada");
-        return ciAIdPersona[_ci];
+        uint256 id = ciHashAIdPersona[keccak256(bytes(_ci))];
+        require(id != 0, "CI no registrada");
+        return id;
     }
 
     function obtenerPersonaPorCI(string memory _cedula) public view returns (Persona memory) {
-        uint256 id = ciAIdPersona[_cedula];
+        uint256 id = ciHashAIdPersona[keccak256(bytes(_cedula))];
         require(id != 0, "Persona con esa cedula no encontrada");
         return personas[id];
     }
@@ -112,7 +117,7 @@ contract Personas {
         return personas[_id];
     }
 
-    // Funciones de actualización parcial
+    // Actualizaciones parciales
     function actualizarTelefono(uint256 _id, string memory _telefono) public {
         require(_id > 0 && _id < nextId, "ID no valido");
         personas[_id].telefono = _telefono;
@@ -125,16 +130,30 @@ contract Personas {
         emit PersonaActualizada(_id, "Direccion");
     }
 
-    // Identidad rápida (para otros contratos)
+    // Identidad rápida
     function obtenerIdentidad(uint256 _id) public view returns (string memory, address) {
         require(_id > 0 && _id < nextId, "ID no valido");
         return (personas[_id].cedula, personas[_id].wallet);
     }
 
     function obtenerIdentidadPorCI(string memory _ci) public view returns (string memory, address) {
-        uint256 id = ciAIdPersona[_ci];
+        uint256 id = ciHashAIdPersona[keccak256(bytes(_ci))];
         require(id != 0, "CI no registrada");
         Persona memory p = personas[id];
         return (p.cedula, p.wallet);
+    }
+
+    // 🔹 Listar todas las personas (view, no consume gas en frontend)
+    function listarPersonas() public view returns (Persona[] memory) {
+        Persona[] memory result = new Persona[](idsPersonas.length);
+        for (uint256 i = 0; i < idsPersonas.length; i++) {
+            result[i] = personas[idsPersonas[i]];
+        }
+        return result;
+    }
+
+    // Total de personas registradas
+    function totalPersonas() public view returns (uint256) {
+        return nextId - 1;
     }
 }

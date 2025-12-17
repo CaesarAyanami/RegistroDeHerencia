@@ -20,7 +20,7 @@ contract Propiedades {
 
     uint256 private nextPropId = 1;
     mapping(uint256 => Propiedad) private propiedades;
-    mapping(string => uint256[]) private propiedadesPorCI;
+    mapping(bytes32 => uint256[]) private propiedadesPorCI; // 🔹 usamos hash de CI para eficiencia
 
     event PropiedadRegistrada(uint256 idPropiedad, string ciDueno, address walletDueno);
     event PropiedadTransferida(uint256 idPropiedad, string ciAnteriorDueno, string ciNuevoDueno);
@@ -31,6 +31,7 @@ contract Propiedades {
         (, address wallet) = personasContract.obtenerIdentidad(idPersona);
 
         require(wallet == msg.sender, "Solo el dueno puede registrar su propiedad");
+        require(wallet != address(0), "Wallet invalida");
 
         uint256 idProp = nextPropId++;
         propiedades[idProp] = Propiedad({
@@ -41,23 +42,40 @@ contract Propiedades {
             enHerencia: false
         });
 
-        propiedadesPorCI[_ciDueno].push(idProp);
+        propiedadesPorCI[keccak256(bytes(_ciDueno))].push(idProp);
 
         emit PropiedadRegistrada(idProp, _ciDueno, wallet);
     }
 
-    // Transferir propiedad SOLO con CI (wallet se mantiene como msg.sender)
+    // Transferir propiedad a nuevo CI (actualiza wallet también)
     function transferirPropiedad(uint256 _idPropiedad, string memory _ciNuevoDueno) public {
         Propiedad storage prop = propiedades[_idPropiedad];
         require(prop.idPropiedad != 0, "Propiedad no existe");
         require(prop.walletDueno == msg.sender, "No eres el dueno actual");
 
+        // Obtener wallet del nuevo dueño desde Personas
+        uint256 idNuevo = personasContract.obtenerIdPorCi(_ciNuevoDueno);
+        (, address walletNuevo) = personasContract.obtenerIdentidad(idNuevo);
+        require(walletNuevo != address(0), "Wallet invalida");
+
         string memory ciAnteriorDueno = prop.ciDueno;
 
+        // 🔹 Actualizar propiedad
         prop.ciDueno = _ciNuevoDueno;
-        prop.walletDueno = msg.sender; // se mantiene la misma cuenta
+        prop.walletDueno = walletNuevo;
 
-        propiedadesPorCI[_ciNuevoDueno].push(_idPropiedad);
+        // 🔹 Eliminar del array del dueño anterior
+        uint256[] storage idsAnterior = propiedadesPorCI[keccak256(bytes(ciAnteriorDueno))];
+        for (uint256 i = 0; i < idsAnterior.length; i++) {
+            if (idsAnterior[i] == _idPropiedad) {
+                idsAnterior[i] = idsAnterior[idsAnterior.length - 1];
+                idsAnterior.pop();
+                break;
+            }
+        }
+
+        // 🔹 Agregar al nuevo dueño
+        propiedadesPorCI[keccak256(bytes(_ciNuevoDueno))].push(_idPropiedad);
 
         emit PropiedadTransferida(_idPropiedad, ciAnteriorDueno, _ciNuevoDueno);
     }
@@ -70,7 +88,7 @@ contract Propiedades {
 
     // Listar todas las propiedades de un usuario según su CI
     function listarPropiedadesPorCI(string memory _ciPersona) public view returns (Propiedad[] memory) {
-        uint256[] memory ids = propiedadesPorCI[_ciPersona];
+        uint256[] memory ids = propiedadesPorCI[keccak256(bytes(_ciPersona))];
         Propiedad[] memory result = new Propiedad[](ids.length);
 
         for (uint256 i = 0; i < ids.length; i++) {
@@ -81,12 +99,19 @@ contract Propiedades {
 
     // Contar propiedades de un usuario por CI
     function contarPropiedadesPorCI(string memory _ciPersona) public view returns (uint256) {
-        return propiedadesPorCI[_ciPersona].length;
+        return propiedadesPorCI[keccak256(bytes(_ciPersona))].length;
     }
 
-    // Marcar propiedad como en herencia
+    // Marcar propiedad como en herencia (solo dueño actual)
     function marcarEnHerencia(uint256 _idPropiedad) public {
-        require(propiedades[_idPropiedad].idPropiedad != 0, "Propiedad no existe");
-        propiedades[_idPropiedad].enHerencia = true;
+        Propiedad storage prop = propiedades[_idPropiedad];
+        require(prop.idPropiedad != 0, "Propiedad no existe");
+        require(prop.walletDueno == msg.sender, "No eres el dueno actual");
+        prop.enHerencia = true;
+    }
+
+    // Total de propiedades registradas
+    function totalPropiedades() public view returns (uint256) {
+        return nextPropId - 1;
     }
 }
