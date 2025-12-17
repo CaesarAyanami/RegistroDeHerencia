@@ -7,7 +7,9 @@ import { prepareTransaction } from "../utils/TransactionHandler";
 // Subcomponentes que crearemos
 import DefinirHerencia from "./Herencias/DefinirHerencia";
 import EjecutarHerencia from "./Herencias/EjecutarHerencia";
-import ConsultarPlanHerencia from "./Herencias/ConsultarPlan";
+import ConsultarPlan from "./Herencias/ConsultarPlan";
+import ConsultarPlanHerencia from "./Herencias/consultarDistribucion"
+import ConsultarHerencia from "./Herencias/consultaHerencia"
 
 const Herencias = () => {
   // Obtenemos los contratos necesarios desde tu Loader
@@ -19,6 +21,7 @@ const Herencias = () => {
   const [txDetails, setTxDetails] = useState({ gas: 0, eth: 0, method: null });
 
   // Manejador de preparación de transacciones (Igual al de Personas)
+
   const handlePrepare = async (method) => {
     try {
       const res = await prepareTransaction(web3, method, account);
@@ -26,10 +29,14 @@ const Herencias = () => {
         setTxDetails(res);
         setShowConfirm(true);
       } else {
-        showNotification(res.error, "error");
+        // AQUÍ ESTABA EL ERROR: 
+        // Antes pasabas 'res.error' (que es un objeto). 
+        // Ahora pasamos 'res.message' o un texto genérico.
+        const mensajeError = res.message || "La transacción fallará. Verifica los requisitos.";
+        showNotification(mensajeError, "error");
       }
     } catch (err) {
-      showNotification("Error al preparar la transacción de herencia", "error");
+      showNotification("Error crítico al preparar la transacción", "error");
     }
   };
 
@@ -93,11 +100,24 @@ const Herencias = () => {
             showNotification={showNotification}
           />
           
-          <ConsultarPlanHerencia
+          <ConsultarPlan
             contract={contract}
             propContract={propContract}
             showNotification={showNotification}
           />
+
+          <ConsultarPlanHerencia
+            contract={contract}
+            propContract={propContract}
+            showNotification={showNotification}
+          /> 
+
+          <ConsultarHerencia
+            contract={contract}
+            propContract={propContract}
+            showNotification={showNotification}
+          /> 
+
         </div>
       </div>
     </div>

@@ -13,10 +13,16 @@ contract Herencias {
         uint256 porcentaje;
     }
 
+    // Herencia definida por propiedad
     mapping(uint256 => Distribucion[]) public herenciaPorPropiedad;
+
+    // Participaciones directas: propiedad → CI → porcentaje
     mapping(uint256 => mapping(string => uint256)) public participacionesPorPropiedad;
+
+    // Listado de CIs con participación en cada propiedad
     mapping(uint256 => string[]) public ciConParticipacion;
 
+    // Eventos
     event HerenciaDefinida(uint256 idPropiedad, string ciDueno, string[] herederos);
     event HerenciaEjecutada(uint256 idPropiedad, string ciAnterior, string ciNuevo);
 
@@ -27,13 +33,20 @@ contract Herencias {
         registroPropiedades = Propiedades(_direccionPropiedades);
     }
 
+    // Definir herederos y porcentajes de distribución sobre una propiedad existente
     function definirHerencia(
         uint256 _idPropiedad,
+        string memory _ciDueno,
         string[] memory _ciHerederos,
         uint256[] memory _porcentajes
     ) public {
         Propiedades.Propiedad memory prop = registroPropiedades.obtenerPropiedad(_idPropiedad);
-        require(msg.sender == prop.walletDueno, "Solo el dueno actual puede definir la herencia");
+
+        // 🔹 Validación por CI, no por wallet
+        require(
+            keccak256(bytes(prop.ciDueno)) == keccak256(bytes(_ciDueno)),
+            "Solo el dueno actual puede definir la herencia"
+        );
         require(_ciHerederos.length == _porcentajes.length, "Datos inconsistentes");
 
         delete herenciaPorPropiedad[_idPropiedad];
@@ -57,25 +70,30 @@ contract Herencias {
         emit HerenciaDefinida(_idPropiedad, prop.ciDueno, _ciHerederos);
     }
 
+    // Ejecutar herencia: transferir propiedad completa a un heredero principal
     function ejecutarHerencia(uint256 _idPropiedad, string memory _ciNuevoDueno) public {
         Propiedades.Propiedad memory prop = registroPropiedades.obtenerPropiedad(_idPropiedad);
         require(herenciaPorPropiedad[_idPropiedad].length > 0, "Herencia no definida");
 
         string memory ciAnterior = prop.ciDueno;
 
-        registroPropiedades.transferirPropiedad(_idPropiedad, _ciNuevoDueno);
+        // 🔹 Ahora pasamos CI actual y CI nuevo
+        registroPropiedades.transferirPropiedad(_idPropiedad, ciAnterior, _ciNuevoDueno);
 
         emit HerenciaEjecutada(_idPropiedad, ciAnterior, _ciNuevoDueno);
     }
 
+    // Consultar toda la herencia de una propiedad
     function obtenerHerencia(uint256 _idPropiedad) public view returns (Distribucion[] memory) {
         return herenciaPorPropiedad[_idPropiedad];
     }
 
+    // Consultar porcentaje de participación de un CI en una propiedad
     function obtenerParticipacion(uint256 _idPropiedad, string memory _ci) public view returns (uint256) {
         return participacionesPorPropiedad[_idPropiedad][_ci];
     }
 
+    // Consultar todas las CIs con participación en una propiedad
     function obtenerCiConParticipacion(uint256 _idPropiedad) public view returns (string[] memory) {
         return ciConParticipacion[_idPropiedad];
     }

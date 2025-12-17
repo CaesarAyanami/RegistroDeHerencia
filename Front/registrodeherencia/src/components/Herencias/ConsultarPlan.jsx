@@ -1,135 +1,174 @@
 import React, { useState } from "react";
 
-const ConsultarPlanHerencia = ({ contract, propContract, userContract, showNotification }) => {
+const ConsultaPuntualParticipacion = ({ contract, propContract, showNotification }) => {
+  // Estados para el paso 1: Buscar propiedades por CI del dueño
   const [ciDueno, setCiDueno] = useState("");
   const [propiedades, setPropiedades] = useState([]);
   const [buscandoProps, setBuscandoProps] = useState(false);
-  const [propSeleccionada, setPropSeleccionada] = useState(null);
-  const [protocolo, setProtocolo] = useState([]); 
-  const [cargandoProtocolo, setCargandoProtocolo] = useState(false);
 
-  const buscarBienes = async () => {
+  // Estados para el paso 2: Consulta de participación sobre la propiedad elegida
+  const [propSeleccionada, setPropSeleccionada] = useState(null);
+  const [ciHeredero, setCiHeredero] = useState("");
+  const [resultado, setResultado] = useState(null);
+  const [consultando, setConsultando] = useState(false);
+
+  // 1. Buscar bienes vinculados al titular
+  const buscarBienesDelDuenio = async () => {
     if (!ciDueno.trim()) return showNotification("Ingresa la CI del titular", "alert");
+
     setBuscandoProps(true);
     setPropSeleccionada(null);
-    setProtocolo([]);
+    setResultado(null);
+
     try {
+      // Llamada al contrato de propiedades
       const data = await propContract.methods.listarPropiedadesPorCI(ciDueno.trim()).call();
       setPropiedades(data);
+      if (data.length === 0) showNotification("No se encontraron bienes para esta CI", "info");
     } catch (e) {
-      showNotification("Error al consultar propiedades", "error");
+      console.error(e);
+      showNotification("Error al consultar el registro de propiedades", "error");
     } finally {
       setBuscandoProps(false);
     }
   };
 
-  const cargarDetalleHerencia = async (prop) => {
-    setPropSeleccionada(prop);
-    setCargandoProtocolo(true);
+  // 2. Consultar la cuota del heredero en el bien seleccionado
+  const consultarCuotaEspecifica = async () => {
+    if (!propSeleccionada) return showNotification("Selecciona una propiedad primero", "alert");
+    if (!ciHeredero.trim()) return showNotification("Ingresa la CI del heredero", "alert");
+
+    setConsultando(true);
+    setResultado(null);
+
     try {
-      const id = prop.idPropiedad;
-      const cisHerederos = await contract.methods.obtenerCiConParticipacion(id).call();
+      const id = propSeleccionada.idPropiedad;
+      // Llamada al contrato de herencias
+      const porcentaje = await contract.methods
+        .obtenerParticipacion(parseInt(id), ciHeredero.trim())
+        .call();
 
-      if (!cisHerederos || cisHerederos.length === 0) {
-        setProtocolo([]);
-        showNotification("Sin plan de herencia definido", "info");
+      setResultado({
+        porcentaje: porcentaje,
+        ci: ciHeredero,
+        id: id
+      });
+
+      if (parseInt(porcentaje) === 0) {
+        showNotification("Sin asignación para este heredero", "info");
       } else {
-        // AQUÍ ESTÁ EL TRUCO: Buscamos porcentaje y nombre en paralelo
-        const promesas = cisHerederos.map(async (ci) => {
-          const porc = await contract.methods.obtenerParticipacion(id, ci).call();
-          
-          // Intentamos obtener el nombre desde el contrato de usuarios/propiedades
-          // Ajusta 'obtenerNombre' al nombre real de tu función
-          let nombre = "Nombre no registrado";
-          try {
-            if (userContract) {
-              nombre = await userContract.methods.obtenerNombre(ci).call();
-            }
-          } catch (err) { 
-            console.log("No se pudo obtener nombre para CI:", ci);
-          }
-
-          return { ci, porc, nombre };
-        });
-
-        const resultados = await Promise.all(promesas);
-        setProtocolo(resultados);
+        showNotification("Cuota verificada exitosamente", "success");
       }
     } catch (e) {
-      showNotification("Error al obtener el protocolo", "error");
+      console.error(e);
+      showNotification("Error al verificar participación", "error");
     } finally {
-      setCargandoProtocolo(false);
+      setConsultando(false);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* COLUMNA IZQUIERDA: BUSCADOR */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+      
+      {/* SECCIÓN IZQUIERDA: LOCALIZADOR DE BIEN */}
       <section className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-gray-100">
         <h2 className="text-lg font-black italic text-gray-800 uppercase mb-4 flex items-center gap-2">
-          <span className="w-2 h-5 bg-blue-600 rounded-full"></span> 1. Buscar por Titular
+          <span className="w-2 h-5 bg-amber-500 rounded-full"></span> 1. Localizar Propiedad
         </h2>
-        <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-2xl border border-gray-100">
+
+        <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-2xl border border-gray-100 focus-within:ring-2 focus-within:ring-amber-100 transition-all">
           <input 
             className="flex-1 bg-transparent outline-none text-sm font-bold px-3" 
-            placeholder="CI del Dueño..."
+            placeholder="Cédula del Dueño..."
             value={ciDueno}
             onChange={(e) => setCiDueno(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && buscarBienesDelDuenio()}
           />
-          <button onClick={buscarBienes} className="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase">
+          <button 
+            onClick={buscarBienesDelDuenio}
+            className="bg-amber-500 hover:bg-black text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase transition-all"
+          >
             {buscandoProps ? "..." : "BUSCAR"}
           </button>
         </div>
 
-        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
           {propiedades.map((p, idx) => (
             <div 
               key={idx}
-              onClick={() => cargarDetalleHerencia(p)}
+              onClick={() => { setPropSeleccionada(p); setResultado(null); }}
               className={`p-4 rounded-[1.5rem] border cursor-pointer transition-all ${
-                propSeleccionada?.idPropiedad === p.idPropiedad ? "bg-blue-600 border-blue-600 shadow-lg scale-[1.02]" : "bg-gray-50 border-gray-100"
+                propSeleccionada?.idPropiedad === p.idPropiedad 
+                ? "bg-amber-500 border-amber-600 shadow-lg scale-[1.02]" 
+                : "bg-gray-50 border-gray-100 hover:border-amber-200"
               }`}
             >
-              <span className={`text-[9px] font-black px-2 py-1 rounded-full ${propSeleccionada?.idPropiedad === p.idPropiedad ? "bg-white text-blue-600" : "bg-blue-100 text-blue-600"}`}>
-                ID #{p.idPropiedad.toString()}
-              </span>
-              <p className={`text-xs font-bold mt-2 ${propSeleccionada?.idPropiedad === p.idPropiedad ? "text-white" : "text-gray-700"}`}>
+              <div className="flex justify-between items-center mb-1">
+                <span className={`text-[9px] font-black px-2 py-1 rounded-full ${
+                  propSeleccionada?.idPropiedad === p.idPropiedad ? "bg-white text-amber-600" : "bg-amber-100 text-amber-600"
+                }`}>
+                  ID #{p.idPropiedad.toString()}
+                </span>
+              </div>
+              <p className={`text-xs font-bold leading-tight ${propSeleccionada?.idPropiedad === p.idPropiedad ? "text-white" : "text-gray-700"}`}>
                 {p.descripcion}
               </p>
             </div>
           ))}
+          {propiedades.length === 0 && !buscandoProps && (
+            <p className="text-center text-[10px] font-bold text-gray-400 uppercase py-10">Ingresa una CI para ver sus bienes</p>
+          )}
         </div>
       </section>
 
-      {/* COLUMNA DERECHA: PROTOCOLO CON NOMBRES */}
-      <section className={`bg-white p-6 rounded-[2.5rem] shadow-xl border-t-8 border-indigo-600 transition-all ${!propSeleccionada ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
-        <h2 className="text-lg font-black italic text-gray-800 uppercase mb-4">Detalle de Beneficiarios</h2>
+      {/* SECCIÓN DERECHA: CONSULTA DE PARTICIPACIÓN */}
+      <section className={`bg-white p-6 rounded-[2.5rem] shadow-xl border-t-8 border-amber-500 transition-all duration-500 ${!propSeleccionada ? 'opacity-40 grayscale pointer-events-none' : 'opacity-100'}`}>
+        <h2 className="text-lg font-black italic text-gray-800 uppercase mb-4 text-center">Consulta Puntual</h2>
         
-        {cargandoProtocolo ? (
-          <div className="py-20 text-center animate-pulse text-indigo-400 font-black text-[10px]">CONSULTANDO NOMBRES...</div>
-        ) : (
-          <div className="space-y-3">
-            {protocolo.map((h, i) => (
-              <div key={i} className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-black text-xs">
-                    {h.nombre.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="text-sm font-black text-gray-800 leading-tight">{h.nombre}</p>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter text-left">CI: {h.ci}</p>
-                  </div>
-                </div>
-                <div className="bg-white px-3 py-1 rounded-xl border border-indigo-50 shadow-sm">
-                  <span className="text-lg font-black text-indigo-600">{h.porc}%</span>
-                </div>
-              </div>
-            ))}
+        <div className="space-y-4">
+          {propSeleccionada && (
+            <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100">
+              <p className="text-[8px] font-black text-amber-500 uppercase">Bien Seleccionado:</p>
+              <p className="text-xs font-bold text-gray-700 truncate">{propSeleccionada.descripcion}</p>
+            </div>
+          )}
+
+          <div className="bg-gray-50 p-2 rounded-2xl border border-gray-100 focus-within:ring-2 focus-within:ring-amber-100 transition-all">
+            <p className="text-[8px] font-black text-gray-400 uppercase px-3 pt-1">Cédula del Heredero</p>
+            <input 
+              className="w-full bg-transparent outline-none text-sm font-bold px-3 pb-1" 
+              placeholder="Ej: V-123456"
+              value={ciHeredero}
+              onChange={(e) => setCiHeredero(e.target.value)}
+            />
           </div>
-        )}
+
+          <button 
+            onClick={consultarCuotaEspecifica}
+            disabled={consultando || !propSeleccionada}
+            className="w-full bg-black text-white py-4 rounded-2xl font-black text-[10px] uppercase transition-all shadow-lg hover:bg-amber-600"
+          >
+            {consultando ? "VERIFICANDO..." : "CONSULTAR MI PORCENTAJE"}
+          </button>
+
+          {/* Resultado Visual de la cuota */}
+          {resultado && (
+            <div className="mt-6 p-6 rounded-3xl bg-gradient-to-br from-amber-50 to-white border border-amber-100 animate-in zoom-in-95">
+              <div className="text-center">
+                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Participación Legal</p>
+                <div className="text-6xl font-black text-gray-800 leading-none mb-2">
+                  {resultado.porcentaje}%
+                </div>
+                <p className="text-[9px] font-bold text-gray-400 uppercase">
+                  Para {resultado.ci} en Título #{resultado.id}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );
 };
 
-export default ConsultarPlanHerencia;
+export default ConsultaPuntualParticipacion;

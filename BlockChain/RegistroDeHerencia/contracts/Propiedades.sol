@@ -14,7 +14,7 @@ contract Propiedades {
         uint256 idPropiedad;
         string descripcion;
         string ciDueno;
-        address walletDueno;
+        address walletDueno; // se mantiene para trazabilidad, pero no se usa en validaciones
         bool enHerencia;
     }
 
@@ -30,7 +30,6 @@ contract Propiedades {
         uint256 idPersona = personasContract.obtenerIdPorCi(_ciDueno);
         (, address wallet) = personasContract.obtenerIdentidad(idPersona);
 
-        require(wallet == msg.sender, "Solo el dueno puede registrar su propiedad");
         require(wallet != address(0), "Wallet invalida");
 
         uint256 idProp = nextPropId++;
@@ -47,11 +46,16 @@ contract Propiedades {
         emit PropiedadRegistrada(idProp, _ciDueno, wallet);
     }
 
-    // Transferir propiedad a nuevo CI (actualiza wallet también)
-    function transferirPropiedad(uint256 _idPropiedad, string memory _ciNuevoDueno) public {
+    // Transferir propiedad a nuevo CI (validación por CI, no por wallet)
+    function transferirPropiedad(uint256 _idPropiedad, string memory _ciDuenoActual, string memory _ciNuevoDueno) public {
         Propiedad storage prop = propiedades[_idPropiedad];
         require(prop.idPropiedad != 0, "Propiedad no existe");
-        require(prop.walletDueno == msg.sender, "No eres el dueno actual");
+
+        // 🔹 Validación por CI
+        require(
+            keccak256(bytes(prop.ciDueno)) == keccak256(bytes(_ciDuenoActual)),
+            "No eres el dueno actual"
+        );
 
         // Obtener wallet del nuevo dueño desde Personas
         uint256 idNuevo = personasContract.obtenerIdPorCi(_ciNuevoDueno);
@@ -102,11 +106,17 @@ contract Propiedades {
         return propiedadesPorCI[keccak256(bytes(_ciPersona))].length;
     }
 
-    // Marcar propiedad como en herencia (solo dueño actual)
-    function marcarEnHerencia(uint256 _idPropiedad) public {
+    // Marcar propiedad como en herencia (validación por CI)
+    function marcarEnHerencia(uint256 _idPropiedad, string memory _ciDuenoActual) public {
         Propiedad storage prop = propiedades[_idPropiedad];
         require(prop.idPropiedad != 0, "Propiedad no existe");
-        require(prop.walletDueno == msg.sender, "No eres el dueno actual");
+
+        // 🔹 Validación por CI
+        require(
+            keccak256(bytes(prop.ciDueno)) == keccak256(bytes(_ciDuenoActual)),
+            "No eres el dueno actual"
+        );
+
         prop.enHerencia = true;
     }
 
