@@ -16,9 +16,7 @@ const EjecutarHerencia = ({ contract, propContract, onPrepare, showNotification 
     setPropSeleccionada(null);
 
     try {
-      // Usamos listarPropiedadesPorCI del nuevo Propiedades.sol
       const data = await propContract.methods.listarPropiedadesPorCI(ciDueno.trim()).call();
-      
       if (!data || data.length === 0) {
         showNotification("Cédula sin activos registrados", "info");
       } else {
@@ -38,23 +36,16 @@ const EjecutarHerencia = ({ contract, propContract, onPrepare, showNotification 
 
     try {
       const id = propSeleccionada.idPropiedad;
-
-      // VALIDACIÓN PREVIA EN EL CONTRATO DE HERENCIAS
       const plan = await contract.methods.obtenerHerencia(id).call();
       
       if (!plan || plan.length === 0) {
         return showNotification("Este bien no tiene un plan de herencia definido", "error");
       }
 
-      // Preparamos el método ejecutarHerencia(uint256, string)
-      // Nota: El contrato Herencias.sol se encarga de obtener el CI anterior 
-      // y enviarlo a Propiedades.sol automáticamente.
       const metodo = contract.methods.ejecutarHerencia(id, ciHeredero.trim());
-
       onPrepare(metodo);
       
     } catch (err) {
-      // Evitamos el pantallazo blanco capturando el error como texto
       console.error(err);
       const errorMsg = err.message || "Error desconocido";
       showNotification(errorMsg.includes("revert") ? "La Blockchain rechazó la ejecución" : "Error de comunicación", "error");
@@ -62,65 +53,90 @@ const EjecutarHerencia = ({ contract, propContract, onPrepare, showNotification 
   };
 
   return (
-    <section className="bg-[#1e2124] text-white p-6 rounded-[2.5rem] shadow-2xl border border-gray-700">
-      <h2 className="text-xl font-black italic uppercase mb-6 flex items-center gap-3 text-green-400">
-        <span className="w-2 h-6 bg-green-500 rounded-full shadow-[0_0_12px_#22c55e]"></span> 
-        Adjudicación Legal
-      </h2>
-
-      {/* PASO 1: Búsqueda por CI */}
-      <div className="bg-[#2f3336] p-5 rounded-3xl border border-gray-600 mb-6">
-        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 block ml-1">
-          1. Identificar Bienes del Causante
-        </label>
-        <div className="flex gap-3">
-          <input 
-            className="flex-1 bg-[#121416] border border-gray-700 outline-none text-sm font-bold px-5 py-3 rounded-2xl text-white focus:border-green-500 transition-all placeholder:text-gray-600" 
-            placeholder="Cédula del Titular..." 
-            value={ciDueno} 
-            onChange={(e) => setCiDueno(e.target.value)}
-          />
-          <button 
-            onClick={buscarBienes}
-            disabled={buscandoProps}
-            className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-2xl font-black text-[10px] uppercase transition-all shadow-lg active:scale-95 disabled:opacity-50"
-          >
-            {buscandoProps ? "..." : "BUSCAR"}
-          </button>
+    <div className="space-y-4 md:space-y-6 p-3 md:p-4 transition-colors duration-300">
+      {/* Header del componente */}
+      <div className="flex items-center gap-3 mb-2 md:mb-4">
+        <div className="w-6 h-6 md:w-8 md:h-8 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-md flex items-center justify-center font-bold text-xs md:text-sm border border-emerald-100 dark:border-emerald-800">
+          ⚖️
         </div>
+        <h2 className="text-lg md:text-xl font-black text-gray-800 dark:text-gray-200 tracking-tight">
+          Adjudicación Legal
+        </h2>
       </div>
 
-      {/* LISTADO DE RESULTADOS - ALTO CONTRASTE */}
-      <div className={`space-y-3 mb-6 transition-all duration-300 ${propiedades.length > 0 ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-        <div className="max-h-40 overflow-y-auto pr-2 custom-scrollbar space-y-2">
-          {propiedades.map((p, idx) => (
-            <div 
-              key={idx}
-              onClick={() => setPropSeleccionada(p)}
-              className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                propSeleccionada?.idPropiedad === p.idPropiedad 
-                ? "bg-green-600/10 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.1)]" 
-                : "bg-[#121416] border-transparent hover:border-gray-600"
-              }`}
+      {/* PASO 1: Búsqueda de Bienes */}
+      <div className="space-y-3 md:space-y-4 mb-4 md:mb-6">
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
+            1. Identificar Bienes del Causante
+          </label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input 
+              className="flex-1 px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:outline-none transition-all duration-300 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              placeholder="Cédula del Titular..." 
+              value={ciDueno} 
+              onChange={(e) => setCiDueno(e.target.value)}
+            />
+            <button 
+              onClick={buscarBienes}
+              disabled={buscandoProps}
+              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-colors duration-300 disabled:bg-gray-300 dark:disabled:bg-gray-700 dark:disabled:text-gray-500 focus:ring-2 focus:ring-emerald-400 focus:outline-none"
             >
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[10px] font-black text-green-500">ACTIVO #{p.idPropiedad.toString()}</span>
-                {p.enHerencia && <span className="text-[8px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full uppercase font-bold">Plan Activo</span>}
-              </div>
-              <p className="text-sm font-bold text-gray-200">{p.descripcion}</p>
-            </div>
-          ))}
+              {buscandoProps ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-[11px]">BUSCANDO...</span>
+                </div>
+              ) : "BUSCAR"}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* LISTADO DE RESULTADOS */}
+      {propiedades.length > 0 && (
+        <div className="mb-4 md:mb-6 space-y-2 animate-in slide-in-from-top-2 duration-300">
+          <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
+            Seleccione el activo a traspasar
+          </label>
+          <div className="max-h-40 md:max-h-48 overflow-y-auto pr-1 space-y-2 custom-scrollbar">
+            {propiedades.map((p, idx) => (
+              <div 
+                key={idx}
+                onClick={() => setPropSeleccionada(p)}
+                className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-300 ${
+                  propSeleccionada?.idPropiedad === p.idPropiedad 
+                  ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 dark:border-emerald-400 ring-1 ring-emerald-500/20 dark:ring-emerald-400/20" 
+                  : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                    ID #{p.idPropiedad.toString()}
+                  </span>
+                  {p.enHerencia && (
+                    <span className="text-[9px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-400 px-2 py-1 rounded font-bold uppercase tracking-wider">
+                      CON PLAN
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">
+                  {p.descripcion}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* PASO 2: EJECUCIÓN */}
-      <div className={`space-y-4 transition-all duration-500 ${!propSeleccionada ? 'opacity-10 grayscale pointer-events-none' : 'opacity-100'}`}>
-        <div className="bg-[#2f3336] p-5 rounded-3xl border border-gray-600">
-          <label className="text-[10px] font-bold text-green-500 uppercase tracking-widest mb-3 block ml-1">
-            2. CI del Nuevo Propietario
+      <div className={`space-y-3 md:space-y-4 transition-all duration-500 ${!propSeleccionada ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
+            2. Cédula del Beneficiario
           </label>
           <input 
-            className="w-full bg-[#121416] border border-gray-700 outline-none text-sm font-bold text-white px-5 py-4 rounded-2xl focus:border-green-500 transition-all placeholder:text-gray-600" 
+            className="w-full px-3 py-2 text-xs border border-emerald-200 dark:border-emerald-800 bg-emerald-50/20 dark:bg-emerald-900/20 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:outline-none transition-all duration-300 text-emerald-700 dark:text-emerald-400 font-bold placeholder:text-emerald-400/50 dark:placeholder:text-emerald-600"
             placeholder="Ingrese Cédula del Heredero..." 
             value={ciHeredero} 
             onChange={(e) => setCiHeredero(e.target.value)}
@@ -129,12 +145,19 @@ const EjecutarHerencia = ({ contract, propContract, onPrepare, showNotification 
 
         <button 
           onClick={prepararTransaccion}
-          className="w-full bg-white text-black py-5 rounded-[1.5rem] font-black text-[12px] uppercase hover:bg-green-500 hover:text-white transition-all shadow-xl active:scale-95"
+          className="w-full px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-colors duration-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none shadow-sm"
         >
-          Firmar Traspaso de Título
+          FIRMAR TRASPASO DE TÍTULO
         </button>
+
+        {/* Información adicional */}
+        <div className="pt-2">
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center italic">
+            Esta acción requiere firma digital para validar el cambio de titularidad
+          </p>
+        </div>
       </div>
-    </section>
+    </div>
   );
 };
 

@@ -1,26 +1,20 @@
 import React, { useState } from "react";
 
 const ConsultarPlanHerencia = ({ contract, propContract, showNotification }) => {
-  // Estados para la búsqueda inicial
   const [ciDueno, setCiDueno] = useState("");
   const [propiedades, setPropiedades] = useState([]);
   const [buscandoProps, setBuscandoProps] = useState(false);
-
-  // Estados para el detalle del protocolo
   const [propSeleccionada, setPropSeleccionada] = useState(null);
-  const [protocolo, setProtocolo] = useState([]); // [{ci, porc}]
+  const [protocolo, setProtocolo] = useState([]);
   const [cargandoProtocolo, setCargandoProtocolo] = useState(false);
 
-  // 1. Buscar propiedades vinculadas a la CI del dueño
   const buscarBienes = async () => {
     if (!ciDueno.trim()) return showNotification("Ingresa la CI del titular", "alert");
-    
     setBuscandoProps(true);
     setPropSeleccionada(null);
     setProtocolo([]);
-    
+
     try {
-      // Usamos el método de tu contrato de propiedades
       const data = await propContract.methods.listarPropiedadesPorCI(ciDueno.trim()).call();
       setPropiedades(data);
       if (data.length === 0) showNotification("No se encontraron bienes", "info");
@@ -31,7 +25,6 @@ const ConsultarPlanHerencia = ({ contract, propContract, showNotification }) => 
     }
   };
 
-  // 2. Cargar el protocolo de herencia de la propiedad seleccionada
   const cargarDetalleHerencia = async (prop) => {
     setPropSeleccionada(prop);
     setCargandoProtocolo(true);
@@ -39,24 +32,19 @@ const ConsultarPlanHerencia = ({ contract, propContract, showNotification }) => 
 
     try {
       const id = prop.idPropiedad;
-      
-      // Función que mencionaste: obtiene el array de CIs
       const cisHerederos = await contract.methods.obtenerCiConParticipacion(id).call();
 
       if (!cisHerederos || cisHerederos.length === 0) {
         showNotification("Esta propiedad no tiene plan de herencia", "info");
       } else {
-        // Obtenemos los porcentajes para cada CI encontrada
         const promesas = cisHerederos.map(async (ci) => {
           const porc = await contract.methods.obtenerParticipacion(id, ci).call();
           return { ci, porc };
         });
-
         const resultados = await Promise.all(promesas);
         setProtocolo(resultados);
       }
     } catch (e) {
-      console.error(e);
       showNotification("Error al obtener el protocolo", "error");
     } finally {
       setCargandoProtocolo(false);
@@ -64,102 +52,141 @@ const ConsultarPlanHerencia = ({ contract, propContract, showNotification }) => 
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm transition-colors duration-300">
       
-      {/* SECCIÓN IZQUIERDA: BUSCADOR DE BIENES POR CI */}
-      <section className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-gray-100">
-        <h2 className="text-lg font-black italic text-gray-800 uppercase mb-4 flex items-center gap-2">
-          <span className="w-2 h-5 bg-blue-600 rounded-full"></span> 1. Buscar por Titular
+      {/* CABECERA ESTILO AUDITORÍA */}
+      <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-indigo-50/30 dark:bg-indigo-900/20 flex items-center gap-2">
+        <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-md text-xs">
+          📊
+        </div>
+        <h2 className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+          Distribución de Herencia
         </h2>
+      </div>
 
-        <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-2xl border border-gray-100">
+      <div className="p-4 space-y-4">
+        {/* BUSCADOR SUPERIOR */}
+        <div className="flex flex-col sm:flex-row gap-2">
           <input 
-            className="flex-1 bg-transparent outline-none text-sm font-bold px-3" 
-            placeholder="CI del Dueño..."
+            className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-400 transition-all duration-300 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            placeholder="CI del Titular..."
             value={ciDueno}
             onChange={(e) => setCiDueno(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && buscarBienes()}
           />
           <button 
             onClick={buscarBienes}
-            className="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase transition-all"
+            disabled={buscandoProps}
+            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-colors duration-300 disabled:bg-gray-300 dark:disabled:bg-gray-700 dark:disabled:text-gray-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
           >
-            {buscandoProps ? "..." : "BUSCAR"}
+            {buscandoProps ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-[11px]">BUSCANDO...</span>
+              </div>
+            ) : "BUSCAR"}
           </button>
         </div>
 
-        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+        {/* LISTADO DE BIENES (VERTICAL CON SCROLL) */}
+        <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1 custom-scrollbar">
           {propiedades.map((p, idx) => (
             <div 
-              key={idx}
+              key={idx} 
               onClick={() => cargarDetalleHerencia(p)}
-              className={`p-4 rounded-[1.5rem] border cursor-pointer transition-all ${
+              className={`p-2.5 rounded-lg border cursor-pointer transition-all duration-300 ${
                 propSeleccionada?.idPropiedad === p.idPropiedad 
-                ? "bg-blue-600 border-blue-600 shadow-lg scale-[1.02]" 
-                : "bg-gray-50 border-gray-100 hover:border-blue-200"
+                ? "bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-400 text-white shadow-md" 
+                : "bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-500"
               }`}
             >
-              <div className="flex justify-between items-center mb-1">
-                <span className={`text-[9px] font-black px-2 py-1 rounded-full ${
-                  propSeleccionada?.idPropiedad === p.idPropiedad ? "bg-white text-blue-600" : "bg-blue-100 text-blue-600"
+              <div className="flex justify-between items-center">
+                <span className={`text-[8px] font-bold tracking-wider px-1.5 py-0.5 rounded ${
+                  propSeleccionada?.idPropiedad === p.idPropiedad 
+                    ? "bg-indigo-500 dark:bg-indigo-400" 
+                    : "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900"
                 }`}>
                   ID #{p.idPropiedad.toString()}
                 </span>
-                {p.enHerencia && <span className={`text-[8px] font-bold uppercase italic ${propSeleccionada?.idPropiedad === p.idPropiedad ? "text-blue-100" : "text-amber-500"}`}>Con Protocolo</span>}
+                {p.enHerencia && (
+                  <span className="text-[7px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-tighter">
+                    ● Protocolizado
+                  </span>
+                )}
               </div>
-              <p className={`text-xs font-bold leading-tight ${propSeleccionada?.idPropiedad === p.idPropiedad ? "text-white" : "text-gray-700"}`}>
+              <p className="text-[10px] font-bold truncate mt-1 uppercase text-gray-800 dark:text-gray-200">
                 {p.descripcion}
               </p>
             </div>
           ))}
+          {!buscandoProps && propiedades.length === 0 && (
+            <div className="text-center py-4 border border-dashed border-gray-200 dark:border-gray-600 rounded-lg">
+                <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase">
+                  Sin resultados
+                </p>
+            </div>
+          )}
         </div>
-      </section>
 
-      {/* SECCIÓN DERECHA: PROTOCOLO DE HERENCIA */}
-      <section className={`bg-white p-6 rounded-[2.5rem] shadow-xl border-t-8 border-indigo-600 transition-all duration-500 ${!propSeleccionada ? 'opacity-40 grayscale pointer-events-none' : 'opacity-100'}`}>
-        <h2 className="text-lg font-black italic text-gray-800 uppercase mb-4 text-center">Protocolo de Distribución</h2>
-        
-        {cargandoProtocolo ? (
-          <div className="py-20 text-center animate-pulse">
-            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Sincronizando Ledger...</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {protocolo.length > 0 ? (
-              <>
-                <div className="mb-4 p-3 bg-indigo-50 rounded-2xl border border-indigo-100">
-                  <p className="text-[10px] font-black text-indigo-400 uppercase">Detalle del Bien seleccionado:</p>
-                  <p className="text-sm font-bold text-indigo-900 truncate">{propSeleccionada?.descripcion}</p>
-                </div>
-
-                <div className="space-y-2 min-h-[150px]">
-                  {protocolo.map((h, i) => (
-                    <div key={i} className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
-                      <div>
-                        <p className="text-[8px] font-black text-gray-400 uppercase">Beneficiario</p>
-                        <span className="text-xs font-black text-gray-600">CI: {h.ci}</span>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[8px] font-black text-indigo-400 uppercase">Cuota</p>
-                        <span className="text-xl font-black text-indigo-600">{h.porc}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 p-4 bg-indigo-600 rounded-2xl text-center shadow-lg shadow-indigo-100">
-                   <p className="text-[10px] font-black text-indigo-100 uppercase mb-1">Total Protocolo</p>
-                   <p className="text-2xl font-black text-white">100% Validado</p>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-20 opacity-30">
-                <p className="text-[10px] font-black uppercase">Selecciona una propiedad para ver herederos</p>
+        {/* PROTOCOLO RESULTANTE (PARTE INFERIOR) */}
+        <div className={`pt-4 border-t border-gray-100 dark:border-gray-700 transition-all duration-500 ${!propSeleccionada ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
+          <h3 className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+            Protocolo de Distribución
+          </h3>
+          
+          {cargandoProtocolo ? (
+            <div className="flex flex-col items-center py-6 animate-pulse">
+              <div className="w-5 h-5 border-2 border-indigo-600 dark:border-indigo-400 border-t-transparent rounded-full animate-spin mb-2"></div>
+              <p className="text-[8px] font-bold text-gray-400 dark:text-gray-500 uppercase">
+                Sincronizando Ledger...
+              </p>
+            </div>
+          ) : protocolo.length > 0 ? (
+            <div className="space-y-2">
+              {/* Activo seleccionado destacado */}
+              <div className="p-2.5 bg-gray-900 dark:bg-gray-700 rounded-lg mb-3 shadow-lg">
+                <p className="text-[7px] font-bold text-indigo-400 uppercase tracking-wider">
+                  Activo Seleccionado
+                </p>
+                <p className="text-[10px] font-bold text-white dark:text-gray-200 truncate uppercase">
+                  {propSeleccionada?.descripcion}
+                </p>
               </div>
-            )}
-          </div>
-        )}
-      </section>
+
+              {/* Lista de herederos */}
+              <div className="space-y-1.5">
+                {protocolo.map((h, i) => (
+                  <div key={i} className="flex justify-between items-center p-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-colors">
+                    <div>
+                      <p className="text-[7px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+                        Beneficiario
+                      </p>
+                      <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300 font-mono">
+                        CI: {h.ci}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[7px] font-bold text-indigo-400 uppercase leading-none">
+                        Cuota
+                      </p>
+                      <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                        {h.porc}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center py-10 opacity-40 dark:opacity-30">
+              <span className="text-xl mb-1">📜</span>
+              <p className="text-[8px] font-bold uppercase tracking-tighter text-gray-400 dark:text-gray-500">
+                Seleccione un activo para auditar
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

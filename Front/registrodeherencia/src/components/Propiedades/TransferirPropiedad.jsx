@@ -6,78 +6,100 @@ const TransferirPropiedad = ({ onPrepare, showNotification }) => {
   const [ciNueva, setCiNueva] = useState("");
 
   const ejecutarTransferencia = () => {
-    // 1. Validaciones básicas
     if (!id || !ciNueva || !ciActual) {
-      return showNotification("Faltan datos para la transferencia", "alert");
+      return showNotification("Debes completar los 3 campos: CI Origen, ID y CI Destino", "alert");
     }
 
     if (ciActual.trim() === ciNueva.trim()) {
-      return showNotification("No puedes transferir a la misma cédula", "alert");
+      return showNotification("La cédula de origen y destino no pueden ser iguales", "alert");
     }
 
     try {
-      // 2. Ejecución directa
-      // Pasamos la lógica al onPrepare como una función simple de una sola línea
-      onPrepare(contract => 
-        contract.methods.transferirPropiedad(id, ciNueva)
+      onPrepare((contract) => 
+        contract.methods.transferirPropiedad(
+          id, 
+          ciActual.trim(), 
+          ciNueva.trim()
+        )
       );
 
-      // 3. Feedback y limpieza
-      showNotification("Traspaso enviado a la Blockchain", "success");
-      
-      // Limpiamos después de un pequeño delay para asegurar que no interfiera con el envío
-      setTimeout(() => {
-        setCiActual("");
-        setId("");
-        setCiNueva("");
-      }, 1000);
+      showNotification("Preparando confirmación de traspaso...", "info");
 
     } catch (error) {
       console.error("Error al preparar transferencia:", error);
-      showNotification("Error al conectar con el contrato", "alert");
+      showNotification("Error al construir la transacción", "error");
     }
   };
 
   return (
-    <section className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-100 max-w-md mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-red-600 text-white rounded-2xl flex items-center justify-center shadow-lg">
-          <span className="material-icons text-lg">swap_horiz</span>
+    <div className="space-y-4 md:space-y-6 p-3 md:p-4 transition-colors duration-300">
+      {/* Header del componente */}
+      <div className="flex items-center gap-3 mb-2 md:mb-4">
+        <div className="w-6 h-6 md:w-8 md:h-8 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-md flex items-center justify-center font-bold text-xs md:text-sm border border-amber-100 dark:border-amber-800">
+          ⇄
         </div>
-        <h2 className="text-xl font-black italic text-gray-800 tracking-tight uppercase">Transferencia</h2>
+        <h2 className="text-lg md:text-xl font-black text-gray-800 dark:text-gray-200 tracking-tight">
+          Transferencia de Activo
+        </h2>
       </div>
 
-      <div className="space-y-4">
-        <input 
-          className="w-full bg-gray-50 border-2 border-transparent focus:border-red-200 outline-none p-4 rounded-2xl font-bold text-gray-600"
-          placeholder="Cédula Origen"
-          value={ciActual}
-          onChange={e => setCiActual(e.target.value)}
-        />
+      <div className="space-y-3 md:space-y-4">
+        {/* Campo: CI Propietario Actual */}
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
+            Cédula Propietario Actual
+          </label>
+          <input 
+            className="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:outline-none transition-all duration-300 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            placeholder="Cédula registrada en el título"
+            value={ciActual}
+            onChange={e => setCiActual(e.target.value)}
+          />
+        </div>
 
-        <input 
-          type="number"
-          className="w-full bg-red-50/50 border-2 border-transparent focus:border-red-200 outline-none p-4 rounded-2xl font-bold text-gray-600"
-          placeholder="ID Propiedad #"
-          value={id}
-          onChange={e => setId(e.target.value)}
-        />
+        {/* Campo: ID de Propiedad */}
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
+            ID de Propiedad
+          </label>
+          <input 
+            type="number"
+            className="w-full px-3 py-2 text-xs border border-amber-200 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-900/20 rounded-lg focus:ring-2 focus:ring-amber-400 focus:outline-none transition-all duration-300 text-amber-700 dark:text-amber-400 font-bold placeholder:text-amber-400/50 dark:placeholder:text-amber-600"
+            placeholder="Ej: 1"
+            value={id}
+            onChange={e => setId(e.target.value)}
+          />
+        </div>
 
-        <input 
-          className="w-full bg-gray-50 border-2 border-transparent focus:border-red-200 outline-none p-4 rounded-2xl font-bold text-gray-600"
-          placeholder="Cédula Destino"
-          value={ciNueva}
-          onChange={e => setCiNueva(e.target.value)}
-        />
+        {/* Campo: CI Nuevo Dueño */}
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
+            Cédula Nuevo Dueño
+          </label>
+          <input 
+            className="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-amber-400 focus:outline-none transition-all duration-300 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            placeholder="Cédula del nuevo adquirente"
+            value={ciNueva}
+            onChange={e => setCiNueva(e.target.value)}
+          />
+        </div>
         
+        {/* Botón de acción */}
         <button 
           onClick={ejecutarTransferencia}
-          className="w-full py-4 bg-red-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg active:scale-95"
+          className="w-full px-3 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-colors duration-300 focus:ring-2 focus:ring-amber-400 focus:outline-none mt-2 shadow-sm"
         >
-          EJECUTAR TRASPASO
+          NOTARIAR TRASPASO
         </button>
+
+        {/* Información adicional */}
+        <div className="pt-2">
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center leading-relaxed px-2">
+            Al ejecutar, se solicitará firma digital para validar el cambio de titularidad en el registro.
+          </p>
+        </div>
       </div>
-    </section>
+    </div>
   );
 };
 

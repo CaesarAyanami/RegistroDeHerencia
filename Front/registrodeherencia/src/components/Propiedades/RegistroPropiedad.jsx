@@ -1,60 +1,144 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, memo } from "react";
+import { useWeb3 } from '../Loader/MetamaskLoader';
 
-const RegistroPropiedad = ({ onPrepare, showNotification }) => {
-  const [ci, setCi] = useState("");
-  const [descripcion, setDescripcion] = useState("");
+const RegistroPropiedad = memo(({ onPrepare, showNotification }) => {
+  const { personas: contractPersonas } = useWeb3();
+  const [form, setForm] = useState({ ci: "", descripcion: "" });
+  const [isValidating, setIsValidating] = useState(false);
 
-  const ejecutarRegistro = () => {
-    if (!ci || !descripcion) {
-      return showNotification("Completa todos los campos para registrar", "alert");
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  }, []);
+
+  const ejecutarRegistro = async () => {
+    const ciClean = form.ci.trim();
+    const descClean = form.descripcion.trim();
+
+    if (!ciClean || !descClean) {
+      return showNotification("Completa todos los campos obligatorios", "alert");
     }
-    // Preparamos el método del contrato para el componente padre
-    onPrepare(contract => contract.methods.registrarPropiedad(ci, descripcion));
+
+    if (!contractPersonas) {
+      return showNotification("Error de conexión: Contrato de Personas no detectado", "error");
+    }
+
+    setIsValidating(true);
+
+    try {
+      let personaExiste = false;
+      
+      try {
+        const persona = await contractPersonas.methods.obtenerPersonaPorCI(ciClean).call();
+        
+        if (persona && persona.nombres && persona.nombres.trim() !== "" && persona.id !== "0") {
+          personaExiste = true;
+        }
+      } catch (err) {
+        console.error("Error al consultar persona:", err);
+      }
+
+      if (!personaExiste) {
+        setIsValidating(false);
+        return showNotification(`Usuario inexistente: La CI ${ciClean} no está registrada en el sistema de ciudadanos.`, "error");
+      }
+
+      onPrepare(contract => 
+        contract.methods.registrarPropiedad(ciClean, descClean)
+      );
+
+      setForm({ ci: "", descripcion: "" });
+
+    } catch (error) {
+      console.error("Error crítico en el proceso:", error);
+      showNotification("Ocurrió un error inesperado al procesar el registro", "error");
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   return (
-    <section className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-100 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full opacity-50 -z-0"></div>
-      
-      <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 font-black">
-            +
-          </div>
-          <h2 className="text-xl font-black italic text-gray-800 tracking-tight uppercase">Registrar Activo</h2>
+    <div className="space-y-4 md:space-y-6 p-3 md:p-4 transition-colors duration-300">
+      {/* Header del componente */}
+      <div className="flex items-center gap-3 mb-2 md:mb-4">
+        <div className="w-6 h-6 md:w-8 md:h-8 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-md flex items-center justify-center font-bold text-xs md:text-sm border border-emerald-100 dark:border-emerald-800">
+          {isValidating ? (
+            <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-emerald-600 dark:border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+          ) : "+"}
+        </div>
+        <h2 className="text-lg md:text-xl font-black text-gray-800 dark:text-gray-200 tracking-tight">
+          Registrar Activo
+        </h2>
+      </div>
+
+      <div className="space-y-3 md:space-y-4">
+        {/* Campo CI */}
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
+            CI Titular (Debe estar registrado)
+          </label>
+          <input 
+            name="ci"
+            type="text"
+            className={`w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-emerald-400 focus:outline-none transition-all duration-300 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 ${
+              isValidating 
+                ? 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 cursor-not-allowed' 
+                : 'border-gray-200 dark:border-gray-600 dark:bg-gray-700'
+            }`}
+            placeholder="Ej: 25000111"
+            value={form.ci}
+            onChange={handleChange}
+            disabled={isValidating}
+          />
         </div>
 
-        <div className="space-y-4">
-          <div className="group">
-            <label className="text-[10px] font-black text-blue-400 ml-2 uppercase tracking-[0.2em]">CI Titular</label>
-            <input 
-              className="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none p-4 rounded-2xl font-bold text-gray-600 transition-all shadow-sm"
-              placeholder="Ej: 12345678"
-              value={ci}
-              onChange={e => setCi(e.target.value)}
-            />
-          </div>
+        {/* Campo Descripción */}
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
+            Descripción Técnica del Inmueble
+          </label>
+          <textarea 
+            name="descripcion"
+            className={`w-full px-3 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-emerald-400 focus:outline-none transition-all duration-300 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none min-h-[80px] md:min-h-[100px] ${
+              isValidating 
+                ? 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 cursor-not-allowed' 
+                : 'border-gray-200 dark:border-gray-600 dark:bg-gray-700'
+            }`}
+            placeholder="Indique dirección completa y detalles del inmueble..."
+            value={form.descripcion}
+            onChange={handleChange}
+            disabled={isValidating}
+            rows={4}
+          />
+        </div>
 
-          <div className="group">
-            <label className="text-[10px] font-black text-blue-400 ml-2 uppercase tracking-[0.2em]">Descripción del Inmueble</label>
-            <textarea 
-              className="w-full bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none p-4 rounded-2xl font-bold text-gray-600 transition-all shadow-sm min-h-[100px]"
-              placeholder="Ej: Casa Residencial, Av. 5 de Julio..."
-              value={descripcion}
-              onChange={e => setDescripcion(e.target.value)}
-            />
-          </div>
+        {/* Botón de acción */}
+        <button 
+          onClick={ejecutarRegistro}
+          disabled={isValidating}
+          className={`w-full px-3 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors duration-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none mt-2 ${
+            isValidating 
+              ? "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed" 
+              : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+          }`}
+        >
+          {isValidating ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-[11px]">VERIFICANDO EN LEDGER...</span>
+            </div>
+          ) : "CERTIFICAR PROPIEDAD"}
+        </button>
 
-          <button 
-            onClick={ejecutarRegistro}
-            className="w-full py-4 bg-blue-600 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95"
-          >
-            NOTARIAR PROPIEDAD
-          </button>
+        {/* Información adicional */}
+        <div className="pt-2">
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center italic">
+            El titular debe estar previamente registrado en el sistema de personas
+          </p>
         </div>
       </div>
-    </section>
+    </div>
   );
-};
+});
 
 export default RegistroPropiedad;

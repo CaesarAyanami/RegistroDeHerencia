@@ -1,168 +1,225 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo, memo } from "react";
 
-const ConsultarPlanHerencia = ({ contract, propContract, personaContract, showNotification }) => {
-  const [ciDueno, setCiDueno] = useState("");
-  const [propiedades, setPropiedades] = useState([]);
-  const [buscandoProps, setBuscandoProps] = useState(false);
-  const [propSeleccionada, setPropSeleccionada] = useState(null);
-  const [protocolo, setProtocolo] = useState([]); 
-  const [cargandoProtocolo, setCargandoProtocolo] = useState(false);
+const BuscadorPersonas = memo(({ contract, onEdit, showNotification }) => {
+  const [criterio, setCriterio] = useState("");
+  const [tipoBusqueda, setTipoBusqueda] = useState("id");
+  const [resultado, setResultado] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const buscarBienes = async () => {
-    if (!ciDueno.trim()) return showNotification("Ingresa la CI del titular", "alert");
-    setPropSeleccionada();
-    setCargandoProtocolo(true);
-    setProtocolo([]);
+  const getGeneroText = useCallback((value) => {
+    const gen = Number(value);
+    const opciones = { 0: "Masculino", 1: "Femenino" };
+    return opciones[gen] || "Otro";
+  }, []);
 
-
-
+  const formatFecha = useCallback((timestamp) => {
+    const t = Number(timestamp);
+    if (!t || t === 0) return "No registrada";
     try {
-      const data = await propContract.methods.listarPropiedadesPorCI(ciDueno.trim()).call();
-      setPropiedades(data);
-      if (data.length === 0) showNotification("No se encontraron bienes", "info");
-    } catch (e) {
-      showNotification("Error al consultar propiedades", "error");
-    } finally {
-      setBuscandoProps(false);
+      return new Date(t * 1000).toLocaleDateString('es-ES', {
+        day: '2-digit', month: '2-digit', year: 'numeric'
+      });
+    } catch {
+      return "Fecha inválida";
     }
-  };
+  }, []);
 
-  const cargarDetalleHerencia = async (prop) => {
-    setPropSeleccionada(prop);
-    setCargandoProtocolo(true);
-    setProtocolo([]);
+  const ejecutarBusqueda = async () => {
+    if (!contract) {
+      return showNotification("Contrato no cargado", "error");
+    }
+    
+    const valorBusqueda = criterio.trim();
+    if (!valorBusqueda) {
+      return showNotification("Por favor, ingrese un valor para buscar", "warning");
+    }
+
+    setLoading(true);
+    setResultado(null);
 
     try {
-      const id = prop.idPropiedad;
-      const cisHerederos = await contract.methods.obtenerCiConParticipacion(id).call();
-
-      if (!cisHerederos || cisHerederos.length === 0) {
-        showNotification("Sin plan de herencia", "info");
+      let res;
+      if (tipoBusqueda === "id") {
+        res = await contract.methods.obtenerPersonaPorId(valorBusqueda).call();
       } else {
-        // MAPEO CON DATOS DE CONTRATO PERSONA
-        const promesas = cisHerederos.map(async (ci) => {
-          // 1. Traemos el porcentaje del contrato de Herencia
-          const porc = await contract.methods.obtenerParticipacion(id, ci).call();
-          
-          // 2. Traemos los datos del contrato Persona (tu lógica del Buscador)
-          let datosPersona = { nombres: "No registrado", apellidos: "" };
-          try {
-            const p = await personaContract.methods.obtenerPersonaPorCI(ci).call();
-            if (p && p.nombres !== "") {
-              datosPersona = p;
-            }
-          } catch (err) {
-            console.error("Persona no encontrada en blockchain para CI:", ci);
-          }
-
-          return { 
-            ci, 
-            porc, 
-            nombreCompleto: `${datosPersona.nombres} ${datosPersona.apellidos}`,
-            genero: datosPersona.genero // Opcional por si quieres poner el emoji 👨/👩
-          };
-        });
-
-        const resultados = await Promise.all(promesas);
-        setProtocolo(resultados);
+        res = await contract.methods.obtenerPersonaPorCI(valorBusqueda).call();
       }
-    } catch (e) {
-      showNotification("Error en protocolo", "error");
+
+      if (res && res.nombres && res.nombres.trim() !== "") {
+        setResultado(res);
+        showNotification("Ciudadano localizado en la red", "success");
+      } else {
+        showNotification("No se encontró ningún registro coincidente", "info");
+      }
+    } catch (err) {
+      console.error("Search Error:", err);
+      showNotification("Error de comunicación con el nodo Blockchain", "error");
     } finally {
-      setCargandoProtocolo(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
-      
-      {/* SECCIÓN IZQUIERDA: BUSCADOR DE BIENES */}
-      <section className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-gray-100">
-        <h2 className="text-xl font-black italic text-gray-800 uppercase mb-6 flex items-center gap-2">
-          <span className="w-2 h-6 bg-indigo-600 rounded-full"></span> 1. Titular de Bienes
-        </h2>
-
-        <div className="flex gap-2 mb-8 bg-gray-50 p-2 rounded-2xl border border-gray-100 focus-within:border-indigo-300 transition-all">
-          <input 
-            className="flex-1 bg-transparent outline-none text-sm font-bold text-gray-600 px-4" 
-            placeholder="Cédula del Dueño..."
-            value={ciDueno}
-            onChange={(e) => setCiDueno(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && buscarBienes()}
-          />
-          <button 
-            onClick={buscarBienes}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg shadow-indigo-100"
+    <div className="space-y-4 md:space-y-6 transition-colors duration-300">
+      {/* Selector de tipo de búsqueda */}
+      <div className="flex p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+        {["id", "cedula"].map((tipo) => (
+          <button
+            key={tipo}
+            onClick={() => { setTipoBusqueda(tipo); setResultado(null); }}
+            className={`flex-1 py-2 md:py-2.5 text-xs font-bold rounded-md transition-all duration-300 uppercase tracking-wider ${
+              tipoBusqueda === tipo 
+                ? "bg-white dark:bg-gray-800 shadow-sm text-emerald-600 dark:text-emerald-400" 
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            }`}
           >
-            {buscandoProps ? "..." : "BUSCAR"}
+            {tipo === "id" ? "Buscar por ID" : "Buscar por Cédula"}
           </button>
-        </div>
+        ))}
+      </div>
 
-        <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
-          {propiedades.map((p, idx) => (
-            <div 
-              key={idx}
-              onClick={() => cargarDetalleHerencia(p)}
-              className={`p-5 rounded-[1.8rem] border-2 cursor-pointer transition-all ${
-                propSeleccionada?.idPropiedad === p.idPropiedad 
-                ? "bg-indigo-600 border-indigo-600 shadow-xl scale-[1.02]" 
-                : "bg-white border-gray-50 hover:border-indigo-100"
-              }`}
+      {/* Input de búsqueda */}
+      <div className="space-y-2">
+        <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
+          {tipoBusqueda === "id" ? "ID del Registro" : "Número de Cédula"}
+        </label>
+        <input
+          type="text"
+          placeholder={tipoBusqueda === "id" ? "Ej: 10" : "Ej: 29664154"}
+          className="w-full px-3 py-2.5 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-400 focus:outline-none transition-all duration-300 dark:text-gray-200"
+          value={criterio}
+          onChange={(e) => setCriterio(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && ejecutarBusqueda()}
+        />
+      </div>
+
+      {/* Botón de búsqueda */}
+      <button
+        onClick={ejecutarBusqueda}
+        disabled={loading}
+        className="w-full px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+      >
+        {loading ? (
+          <>
+            <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-[11px] md:text-xs">CONSULTANDO...</span>
+          </>
+        ) : (
+          <span className="flex items-center gap-2">
+            <span>🔍</span>
+            EJECUTAR BÚSQUEDA
+          </span>
+        )}
+      </button>
+
+      {/* Resultados */}
+      {resultado && (
+        <div className="mt-4 md:mt-6 border border-emerald-100 dark:border-emerald-900/50 rounded-xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 shadow-sm">
+          {/* Header de resultados */}
+          <div className="p-3 md:p-4 border-b border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/30 dark:bg-emerald-900/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2">
+              <span className="p-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 rounded text-xs">
+                📋
+              </span>
+              <h3 className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                Datos Completos
+              </h3>
+            </div>
+            <button 
+              onClick={() => onEdit(resultado)}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold rounded-lg uppercase tracking-wider transition-colors duration-300 flex items-center gap-1.5 whitespace-nowrap"
             >
-              <div className="flex justify-between items-start">
-                <p className={`text-sm font-black leading-tight ${propSeleccionada?.idPropiedad === p.idPropiedad ? "text-white" : "text-gray-800"}`}>
-                  {p.descripcion}
+              <span>✏️</span>
+              EDITAR REGISTRO
+            </button>
+          </div>
+          
+          {/* Contenido de resultados */}
+          <div className="p-3 md:p-4 space-y-3 md:space-y-4">
+            {/* Nombre y apellidos */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                  Nombres
                 </p>
-                <span className={`text-[8px] font-black px-2 py-1 rounded-lg ${
-                  propSeleccionada?.idPropiedad === p.idPropiedad ? "bg-white/20 text-white" : "bg-indigo-50 text-indigo-600"
-                }`}>
-                  #{p.idPropiedad.toString()}
-                </span>
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 leading-tight">
+                  {resultado.nombres}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                  Apellidos
+                </p>
+                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 leading-tight">
+                  {resultado.apellidos}
+                </p>
               </div>
             </div>
-          ))}
+
+            {/* Cédula y género */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                  Cédula
+                </p>
+                <p className="text-sm text-gray-800 dark:text-gray-200">
+                  {resultado.cedula}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                  Género
+                </p>
+                <p className="text-sm text-gray-800 dark:text-gray-200">
+                  {getGeneroText(resultado.genero)}
+                </p>
+              </div>
+            </div>
+
+            {/* Fecha nacimiento y estado civil */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 pb-3 border-b border-gray-100 dark:border-gray-700">
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                  Fecha de Nacimiento
+                </p>
+                <p className="text-sm text-gray-800 dark:text-gray-200">
+                  {formatFecha(resultado.fechaNacimiento)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                  Estado Civil
+                </p>
+                <p className="text-sm text-gray-800 dark:text-gray-200">
+                  {resultado.estadoCivil || "No especificado"}
+                </p>
+              </div>
+            </div>
+
+            {/* Dirección */}
+            <div className="pb-3 border-b border-gray-100 dark:border-gray-700">
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                Dirección de Habitación
+              </p>
+              <p className="text-sm text-gray-800 dark:text-gray-200 leading-tight break-words">
+                {resultado.direccion || "Sin dirección"}
+              </p>
+            </div>
+
+            {/* Wallet address */}
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg">
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                Dirección Wallet (Blockchain)
+              </p>
+              <p className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 break-all bg-gray-100 dark:bg-gray-900 p-2 rounded border border-gray-200 dark:border-gray-700">
+                {resultado.wallet}
+              </p>
+            </div>
+          </div>
         </div>
-      </section>
-
-      {/* SECCIÓN DERECHA: PROTOCOLO CON NOMBRES DE PERSONA */}
-      <section className={`bg-white p-6 rounded-[2.5rem] shadow-xl border-t-8 border-indigo-600 transition-all duration-500 ${!propSeleccionada ? 'opacity-40 grayscale pointer-events-none scale-95' : 'opacity-100 scale-100'}`}>
-        <h2 className="text-xl font-black italic text-gray-800 uppercase mb-6 text-center">Protocolo de Herederos</h2>
-        
-        {cargandoProtocolo ? (
-          <div className="py-20 flex flex-col items-center justify-center">
-            <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-            <p className="text-[10px] font-black text-indigo-400 animate-pulse uppercase tracking-[0.2em]">Consultando Registro Civil...</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {protocolo.map((h, i) => (
-              <div key={i} className="flex justify-between items-center bg-gradient-to-r from-gray-50 to-white p-4 rounded-2xl border border-gray-100 hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white rounded-xl shadow-inner border border-indigo-50 flex items-center justify-center text-xl">
-                    {Number(h.genero) === 0 ? "👨" : Number(h.genero) === 1 ? "👩" : "👤"}
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-indigo-950 uppercase italic leading-none mb-1">{h.nombreCompleto}</h4>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase">CI: {h.ci}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-black text-indigo-600 leading-none">{h.porc}%</div>
-                  <p className="text-[8px] font-black text-indigo-300 uppercase mt-1">Participación</p>
-                </div>
-              </div>
-            ))}
-
-            {protocolo.length === 0 && propSeleccionada && (
-              <div className="text-center py-20 opacity-30">
-                <p className="text-[10px] font-black uppercase tracking-widest leading-loose">No se ha definido una <br/> distribución para este bien</p>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
+      )}
     </div>
   );
-};
+});
 
-export default ConsultarPlanHerencia;
+export default BuscadorPersonas;

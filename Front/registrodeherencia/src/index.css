@@ -1,7 +1,11 @@
 @import "tailwindcss";
 
+/* IMPORTANTE: Esto DEBE ir al principio, antes de cualquier @theme */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Ahora puedes configurar tu tema */
 @theme {
-  /* Definimos la animación para las notificaciones */
+  /* Tus animaciones actuales */
   @keyframes slide-in-right {
     0% { transform: translateX(100%); opacity: 0; }
     100% { transform: translateX(0); opacity: 1; }
@@ -14,4 +18,17 @@
 
   --animate-slide-in-right: slide-in-right 0.4s ease-out forwards;
   --animate-fade-fast: fade-in 0.2s ease-out;
+}
+
+/* Opcional: Estilos base para modo oscuro */
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :root:not(.dark) {
+      /* Variables para modo oscuro del sistema */
+    }
+  }
 }

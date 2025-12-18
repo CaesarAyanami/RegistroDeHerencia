@@ -16135,12 +16135,12 @@
     "5777": {
       "events": {},
       "links": {},
-      "address": "0x4228cb5D02f787d470f95DFcfF8f9130C078F631",
-      "transactionHash": "0xccbd7c3c378ace90f61a492bff5eb4c751a6c2072b828656d0a5c5670b3c6c21"
+      "address": "0x3EA7528fe6f2e42225C2E037747c27229c6A3EB0",
+      "transactionHash": "0x1daf0d0d4be909c0158c4ab1eee940397b42cbe2c0782067baae2ef9f55e8b19"
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2025-12-17T16:50:44.542Z",
+  "updatedAt": "2025-12-18T02:52:31.728Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",

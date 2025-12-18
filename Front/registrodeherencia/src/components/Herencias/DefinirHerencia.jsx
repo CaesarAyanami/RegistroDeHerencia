@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 
 const DefinirHerencia = ({ contract, propContract, onPrepare, showNotification }) => {
-  // Estados del Buscador
   const [ciBusqueda, setCiBusqueda] = useState("");
   const [listaPropiedades, setListaPropiedades] = useState([]);
   const [buscando, setBuscando] = useState(false);
   
-  // Estados de la Herencia
   const [propiedadSeleccionada, setPropiedadSeleccionada] = useState(null);
   const [herederos, setHerederos] = useState([]); 
   const [tempCi, setTempCi] = useState("");
@@ -54,15 +52,12 @@ const DefinirHerencia = ({ contract, propContract, onPrepare, showNotification }
     const porcs = herederos.map(h => h.porc);
 
     try {
-      // 🔹 CAMBIO CLAVE: Ahora pasamos 4 argumentos según tu nuevo Herencias.sol:
-      // 1. ID, 2. CI del Dueño, 3. Lista CIs Herederos, 4. Lista Porcentajes
       const metodo = contract.methods.definirHerencia(
         propiedadSeleccionada.idPropiedad, 
-        ciBusqueda.trim(), // Este es el _ciDueno que pide el contrato
+        ciBusqueda.trim(), 
         cis, 
         porcs
       );
-      
       onPrepare(metodo);
     } catch (err) {
       showNotification("Error al construir la transacción", "error");
@@ -72,123 +67,185 @@ const DefinirHerencia = ({ contract, propContract, onPrepare, showNotification }
   const totalPorc = herederos.reduce((acc, curr) => acc + curr.porc, 0);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-2">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-gray-200 dark:divide-gray-700 transition-colors duration-300">
       
-      {/* SECCIÓN 1: BUSCADOR DE ACTIVOS */}
-      <section className="bg-[#1a1c1e] p-6 rounded-[2.5rem] shadow-2xl border border-gray-800">
-        <h2 className="text-xl font-black italic text-white uppercase mb-6 flex items-center gap-3">
-          <span className="w-3 h-6 bg-purple-500 rounded-sm shadow-[0_0_15px_rgba(168,85,247,0.4)]"></span> 
-          1. Activos del Titular
-        </h2>
+      {/* COLUMNA 1: SELECCIÓN DE ACTIVO */}
+      <div className="p-3 md:p-4 lg:p-6">
+        <div className="flex items-center gap-3 mb-4 md:mb-6">
+          <div className="w-6 h-6 md:w-8 md:h-8 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md flex items-center justify-center font-bold text-xs md:text-sm border border-indigo-100 dark:border-indigo-800">
+            1
+          </div>
+          <h3 className="text-base md:text-lg font-black text-gray-800 dark:text-gray-200 tracking-tight">
+            Seleccionar Activo
+          </h3>
+        </div>
 
-        <div className="flex gap-2 mb-8 bg-[#2d2f31] p-2 rounded-2xl border border-white/5">
+        {/* Barra de búsqueda */}
+        <div className="flex flex-col sm:flex-row gap-2 mb-4 md:mb-6">
           <input 
-            className="flex-1 bg-transparent outline-none text-sm font-bold px-4 text-white placeholder:text-gray-500" 
-            placeholder="Cédula del Propietario..."
+            className="flex-1 px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all duration-300 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            placeholder="CI del Titular..."
             value={ciBusqueda}
             onChange={(e) => setCiBusqueda(e.target.value)}
           />
           <button 
             onClick={consultarBienes}
-            className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase transition-all shadow-lg"
+            disabled={buscando}
+            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-colors duration-300 disabled:bg-gray-300 dark:disabled:bg-gray-700 dark:disabled:text-gray-500 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
           >
-            {buscando ? "..." : "BUSCAR"}
+            {buscando ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-[11px]">BUSCANDO...</span>
+              </div>
+            ) : "BUSCAR"}
           </button>
         </div>
 
-        <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
+        {/* Lista de propiedades */}
+        <div className="space-y-2 md:space-y-3 max-h-[300px] md:max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
           {listaPropiedades.map((p, idx) => (
             <div 
               key={idx}
               onClick={() => {
                 setPropiedadSeleccionada(p);
-                setHerederos([]); // Limpiar herederos al cambiar de propiedad
+                setHerederos([]);
               }}
-              className={`p-5 rounded-[1.8rem] border-2 cursor-pointer transition-all ${
+              className={`p-3 md:p-4 rounded-lg border transition-all duration-300 cursor-pointer ${
                 propiedadSeleccionada?.idPropiedad === p.idPropiedad 
-                ? "bg-purple-600/10 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.1)]" 
-                : "bg-[#2d2f31] border-transparent hover:border-gray-700"
+                ? "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-400 shadow-sm ring-1 ring-indigo-200 dark:ring-indigo-400/20" 
+                : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
               }`}
             >
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-[10px] font-black text-purple-400 uppercase tracking-tighter">
-                  Registro #{p.idPropiedad.toString()}
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 mb-1">
+                <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">
+                  ID #{p.idPropiedad.toString()}
                 </span>
                 {p.enHerencia && (
-                  <span className="text-[8px] bg-amber-500/20 text-amber-500 px-2 py-1 rounded-md font-black uppercase italic">
-                    Plan Existente
+                  <span className="text-[9px] bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 px-2 py-1 rounded font-bold uppercase tracking-wider">
+                    Plan Activo
                   </span>
                 )}
               </div>
-              <p className="text-sm font-bold text-gray-200 leading-tight">
+              <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 font-medium line-clamp-2">
                 {p.descripcion}
               </p>
             </div>
           ))}
+          {listaPropiedades.length === 0 && !buscando && (
+            <div className="text-center py-8 opacity-40 text-sm italic text-gray-500 dark:text-gray-400">
+              Sin bienes cargados
+            </div>
+          )}
         </div>
-      </section>
+      </div>
 
-      {/* SECCIÓN 2: CONFIGURACIÓN DE HERENCIA */}
-      <section className={`bg-[#1a1c1e] p-6 rounded-[2.5rem] shadow-2xl border-t-8 border-purple-600 transition-all duration-500 ${!propiedadSeleccionada ? 'opacity-20 grayscale pointer-events-none' : 'opacity-100'}`}>
-        <h2 className="text-xl font-black italic text-white uppercase mb-6">2. Distribución de Bienes</h2>
-        
-        <div className="mb-6 p-4 bg-purple-600/10 rounded-2xl border border-purple-500/20">
-          <p className="text-[9px] font-black text-purple-400 uppercase tracking-[0.2em] mb-1">Activo Seleccionado:</p>
-          <p className="text-sm font-bold text-white truncate">{propiedadSeleccionada?.descripcion || "Ninguno"}</p>
+      {/* COLUMNA 2: CONFIGURACIÓN DE HEREDEROS */}
+      <div className={`p-3 md:p-4 lg:p-6 bg-gray-50/50 dark:bg-gray-800/50 transition-all duration-500 ${!propiedadSeleccionada ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+        <div className="flex items-center gap-3 mb-4 md:mb-6">
+          <div className="w-6 h-6 md:w-8 md:h-8 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md flex items-center justify-center font-bold text-xs md:text-sm shadow-sm">
+            2
+          </div>
+          <h3 className="text-base md:text-lg font-black text-gray-800 dark:text-gray-200 tracking-tight">
+            Distribución de Herencia
+          </h3>
         </div>
 
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <input 
-              className="flex-1 bg-[#2d2f31] border border-gray-700 p-4 rounded-xl text-sm font-bold text-white outline-none focus:border-purple-500 transition-all" 
-              placeholder="CI del Heredero"
-              value={tempCi} onChange={e => setTempCi(e.target.value)}
-            />
-            <input 
-              className="w-20 bg-[#2d2f31] border border-gray-700 p-4 rounded-xl text-sm font-bold text-white text-center outline-none focus:border-purple-500 transition-all" 
-              placeholder="%"
-              type="number"
-              value={tempPorc} onChange={e => setTempPorc(e.target.value)}
-            />
-            <button onClick={agregarHeredero} className="bg-white text-black px-6 rounded-xl font-black text-lg hover:bg-purple-500 hover:text-white transition-all">+</button>
+        <div className="space-y-3 md:space-y-4">
+          {/* Formulario para agregar herederos */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 space-y-1">
+              <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
+                Heredero (CI)
+              </label>
+              <input 
+                className="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all duration-300 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                placeholder="Ej: 20444555"
+                value={tempCi} 
+                onChange={e => setTempCi(e.target.value)}
+              />
+            </div>
+            <div className="w-20 space-y-1">
+              <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
+                %
+              </label>
+              <input 
+                className="w-full px-3 py-2 text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none transition-all duration-300 dark:text-gray-200 text-center"
+                type="number"
+                value={tempPorc} 
+                onChange={e => setTempPorc(e.target.value)}
+              />
+            </div>
+            <button 
+              onClick={agregarHeredero}
+              className="self-end p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-300 focus:ring-2 focus:ring-indigo-400 focus:outline-none shadow-sm"
+            >
+              <span className="text-xl leading-none">+</span>
+            </button>
           </div>
 
-          <div className="space-y-2 min-h-[180px] bg-[#121416] p-4 rounded-2xl border border-white/5">
-            {herederos.length === 0 && (
-              <p className="text-gray-600 text-[10px] text-center mt-16 uppercase font-bold tracking-widest italic">No hay herederos agregados</p>
-            )}
-            {herederos.map((h, i) => (
-              <div key={i} className="flex justify-between items-center bg-[#2d2f31] p-4 rounded-xl border border-white/5 group">
-                <div className="flex flex-col">
-                   <span className="text-[8px] font-black text-gray-500 uppercase">Beneficiario</span>
-                   <span className="text-xs font-bold text-white">CI: {h.ci}</span>
+          {/* Lista de herederos */}
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-inner">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              {herederos.map((h, i) => (
+                <div key={i} className="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 block uppercase tracking-wide">
+                      Heredero
+                    </span>
+                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      CI: {h.ci}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                      {h.porc}%
+                    </span>
+                    <button 
+                      onClick={() => eliminarHeredero(i)}
+                      className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                    >
+                      <span className="text-lg">×</span>
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-lg font-black text-purple-500">{h.porc}%</span>
-                  <button onClick={() => eliminarHeredero(i)} className="text-gray-600 hover:text-red-500 font-bold text-xs transition-all opacity-0 group-hover:opacity-100">✕</button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          <div className="flex justify-between items-center py-4 px-2 bg-white/5 rounded-xl">
-             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Acumulado:</span>
-             <span className={`text-2xl font-black ${totalPorc === 100 ? 'text-green-500' : 'text-purple-500'}`}>{totalPorc}%</span>
+          {/* Total */}
+          <div className="flex justify-between items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              Total Distribución:
+            </span>
+            <span className={`text-base md:text-lg font-bold ${
+              totalPorc === 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-600 dark:text-indigo-400'
+            }`}>
+              {totalPorc}%
+            </span>
           </div>
 
+          {/* Botón de acción */}
           <button 
             onClick={prepararTransaccion}
             disabled={totalPorc !== 100}
-            className={`w-full py-5 rounded-[1.5rem] font-black text-[12px] uppercase tracking-[0.2em] transition-all shadow-2xl transform active:scale-95 ${
+            className={`w-full px-3 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors duration-300 focus:ring-2 focus:ring-emerald-400 focus:outline-none shadow-sm ${
               totalPorc === 100 
-              ? 'bg-purple-600 text-white hover:bg-purple-500 shadow-purple-500/20' 
-              : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+              ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+              : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
             }`}
           >
-            Protocolizar Herencia
+            NOTARIAR SUCESIÓN
           </button>
+
+          {/* Información adicional */}
+          <div className="pt-1">
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center italic">
+              La suma de porcentajes debe ser exactamente 100%
+            </p>
+          </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 };
