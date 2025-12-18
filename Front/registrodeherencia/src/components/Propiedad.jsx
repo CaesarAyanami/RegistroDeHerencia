@@ -85,12 +85,12 @@ const Propiedades = () => {
       <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 transition-all duration-300">
         <div className="space-y-1 md:space-y-2">
           <h1 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-gray-100 tracking-tight">
-            Registro de Títulos Digitales
+            Registro de Propiedades
           </h1>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
             <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] line-clamp-1">
-              Sistema de Tokenización de Activos Reales
+              Registro de Propiedades
             </p>
           </div>
         </div>
@@ -101,7 +101,7 @@ const Propiedades = () => {
               Estatus del Registro
             </p>
             <p className="text-xs font-black text-white uppercase tracking-wider md:tracking-widest">
-              Inscripción Abierta
+              Nodo Propiedad
             </p>
           </div>
         </div>
@@ -117,7 +117,7 @@ const Propiedades = () => {
                 📝
               </span>
               <h2 className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                Inscripción de Título
+                Inscripción de Propiedad
               </h2>
             </div>
             <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-400 italic uppercase">
@@ -137,11 +137,11 @@ const Propiedades = () => {
                 🔄
               </span>
               <h2 className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                Transferencia de Título
+                Transferencia de Propiedad
               </h2>
             </div>
             <span className="text-[10px] font-bold text-amber-500 dark:text-amber-400 italic uppercase">
-              Cambio de Titularidad
+              Cambio de Propiedad
             </span>
           </div>
           <div className="p-3 md:p-4">
@@ -167,7 +167,7 @@ const Propiedades = () => {
               📋
             </span>
             <h2 className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Catastro Blockchain
+              Consulta tus Propiedades
             </h2>
           </div>
           <div className="p-3 md:p-4 md:p-6">

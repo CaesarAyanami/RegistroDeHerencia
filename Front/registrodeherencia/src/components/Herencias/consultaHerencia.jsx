@@ -46,14 +46,6 @@ const VisualizadorPlanHerencia = ({ contract, propContract, showNotification }) 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm transition-colors duration-300">
       {/* CABECERA */}
-      <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-emerald-50/30 dark:bg-emerald-900/20 flex items-center gap-2">
-        <span className="p-1.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 rounded-md text-xs">
-          📂
-        </span>
-        <h2 className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-          Explorador de Títulos
-        </h2>
-      </div>
 
       <div className="p-4 space-y-4">
         {/* BUSCADOR */}

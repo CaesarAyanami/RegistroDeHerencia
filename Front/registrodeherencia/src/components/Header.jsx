@@ -27,10 +27,10 @@ const Header = memo(function Header() {
         {/* Texto del título - Oculto en móvil, visible en desktop */}
         <div className="flex-col hidden md:flex">
           <h1 className="text-base md:text-lg lg:text-xl font-black text-gray-800 dark:text-gray-100 tracking-tight leading-none">
-            Panel de Control Blockchain
+            Legacy Chain
           </h1>
           <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-[0.2em] md:tracking-[0.3em] mt-1">
-            Sistema de Gestión Legal
+            Sistema de Gestión De Herencias
           </span>
         </div>
       </div>
@@ -46,10 +46,10 @@ const Header = memo(function Header() {
         <div className="group flex items-center gap-2 md:gap-3 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 hover:bg-white dark:hover:bg-gray-700 rounded-lg md:rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm transition-all duration-300 cursor-pointer">
           <div className="flex flex-col items-end">
             <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase leading-none mb-0.5">
-              Estatus Red
+              Estado de Red
             </span>
             <span className="text-[10px] md:text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hidden sm:inline tracking-wide">
-              Ethereum Network
+              Ganache Network
             </span>
           </div>
           

@@ -46,6 +46,7 @@ const Sidebar = React.memo(({ activeTab, setActiveTab, darkMode, setDarkMode }) 
         navigator.clipboard.writeText(account);
         showNotification("Dirección copiada al portapapeles", "info");
       } catch (err) {
+        console.error("Clipboard Error:", err);
         showNotification("Error al copiar la dirección", "error");
       }
     } else {
@@ -87,10 +88,10 @@ const Sidebar = React.memo(({ activeTab, setActiveTab, darkMode, setDarkMode }) 
           {!isCollapsed && (
             <div className="overflow-hidden whitespace-nowrap">
               <h1 className="text-xs font-black text-gray-800 dark:text-gray-100 uppercase tracking-tighter">
-                BLOCK-LAW
+                Legacy Chain
               </h1>
               <p className="text-[8px] font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-wider">
-                Protocol
+                IUJO
               </p>
             </div>
           )}
@@ -167,7 +168,7 @@ const Sidebar = React.memo(({ activeTab, setActiveTab, darkMode, setDarkMode }) 
           <div className="w-1.5 h-1.5 bg-emerald-500 dark:bg-emerald-400 rounded-full animate-pulse"></div>
           {!isCollapsed && (
             <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-              Mainnet Verified
+              Cuenta Conectada
             </span>
           )}
         </div>

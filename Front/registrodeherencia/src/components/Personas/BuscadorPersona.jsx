@@ -81,7 +81,7 @@ const BuscadorPersonas = memo(({ contract, onEdit, showNotification }) => {
       {/* Input de búsqueda */}
       <div className="space-y-2">
         <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide block">
-          {tipoBusqueda === "id" ? "ID del Registro" : "Número de Cédula"}
+          {tipoBusqueda === "id" ? "ID del Registro" : "Documento de Identidad"}
         </label>
         <input
           type="text"

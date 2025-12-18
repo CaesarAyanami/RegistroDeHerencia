@@ -53,16 +53,6 @@ const ConsultarPlanHerencia = ({ contract, propContract, showNotification }) => 
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm transition-colors duration-300">
-      
-      {/* CABECERA ESTILO AUDITORÍA */}
-      <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-indigo-50/30 dark:bg-indigo-900/20 flex items-center gap-2">
-        <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-md text-xs">
-          📊
-        </div>
-        <h2 className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-          Distribución de Herencia
-        </h2>
-      </div>
 
       <div className="p-4 space-y-4">
         {/* BUSCADOR SUPERIOR */}

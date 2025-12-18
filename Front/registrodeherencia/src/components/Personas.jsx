@@ -89,23 +89,23 @@ const Personas = () => {
       <div className="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 transition-all duration-300">
         <div className="space-y-1 md:space-y-2">
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-gray-100 tracking-tight">
-            Registro de Títulos Digitales
+            Registro de Personas
           </h1>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
             <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-[0.1em] md:tracking-[0.2em] line-clamp-1">
-              Sistema de Tokenización de Activos Reales
+              Registro y Visualización de Ciudadanos
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3 px-4 py-2 md:px-5 md:py-3 bg-gray-900 dark:bg-gray-700 rounded-lg shadow-sm transition-colors mt-4 md:mt-0">
-          <span className="text-lg md:text-xl">🏠</span>
+          <span className="text-lg md:text-xl">👤</span>
           <div className="text-left">
             <p className="text-[10px] md:text-[11px] font-bold text-gray-400 uppercase leading-none mb-0.5 md:mb-1">
               Estatus del Registro
             </p>
             <p className="text-xs font-black text-white uppercase tracking-wider md:tracking-widest">
-              Inscripción Abierta
+              Nodo Persona
             </p>
           </div>
         </div>

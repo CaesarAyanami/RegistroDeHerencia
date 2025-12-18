@@ -64,7 +64,7 @@ const RegistroEsencial = memo(({ contract, account, onPrepare, showNotification 
           ) : "01"}
         </div>
         <h2 className="text-lg md:text-xl font-black text-gray-800 dark:text-gray-200 tracking-tight">
-          Registro Esencial
+          Registro del Ciudadano
         </h2>
       </div>
 

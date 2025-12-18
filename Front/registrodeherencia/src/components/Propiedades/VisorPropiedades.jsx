@@ -37,7 +37,7 @@ const VisorPropiedades = ({ contract, showNotification }) => {
         <div className="flex items-center gap-3">
           <span className="w-1 h-6 bg-emerald-600 rounded-full hidden sm:block"></span>
           <h2 className="text-lg md:text-xl font-black text-gray-800 dark:text-gray-200 tracking-tight">
-            Consulta de Títulos
+            Consulta de Propiedades
           </h2>
         </div>
         {lista.length > 0 && (
