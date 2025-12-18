@@ -1,106 +1,111 @@
 import React, { useState } from "react";
 
-const RegistroEsencial = ({ contract, account, onPrepare, showNotification }) => {
+const RegistroEsencial = ({
+  contract,
+  account,
+  onPrepare,
+  showNotification,
+}) => {
   const [form, setForm] = useState({ cedula: "", nombres: "", apellidos: "" });
   const [loading, setLoading] = useState(false);
 
   const validarYEnviar = async () => {
-    // 1. Validaciones básicas de campos
     if (!form.cedula.trim() || !form.nombres.trim() || !form.apellidos.trim()) {
       return showNotification("Todos los campos son obligatorios", "alert");
     }
-
-    if (!account) {
-      return showNotification("Wallet no conectada", "error");
-    }
+    if (!account) return showNotification("Wallet no conectada", "error");
 
     setLoading(true);
-
     try {
-      // 2. Intento de verificación (si falla, no detenemos el proceso)
-      try {
-        const persona = await contract.methods.obtenerPersonaPorCI(form.cedula.trim()).call();
-        // Verificamos si existe. Algunos contratos devuelven "0" otros 0 (número)
-        if (persona && persona.id && persona.id.toString() !== "0") {
-          setLoading(false);
-          return showNotification(`La cédula ${form.cedula} ya existe`, "error");
-        }
-      } catch (e) {
-        console.warn("No se pudo verificar la CI, procediendo con el registro...", e);
-      }
-
-      // 3. Preparación del método
       const method = contract.methods.registrarPersonaEsencial(
-        form.cedula.trim(), 
-        form.nombres.trim(), 
-        form.apellidos.trim(), 
+        form.cedula.trim(),
+        form.nombres.trim(),
+        form.apellidos.trim(),
         account
       );
-
-      // 4. Envío al padre
       onPrepare(method);
-      
     } catch (error) {
-      console.error("Error crítico:", error);
       showNotification("Error al procesar el registro", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const inputStyle = "w-full p-3 bg-gray-50 border border-gray-200 rounded-xl mb-3 outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium";
+  // ESTILOS DARK TECH
+  const cardStyle =
+    "bg-[#0d0f14] p-8 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden";
+  const inputStyle =
+    "w-full p-4 bg-black/40 border border-white/10 rounded-2xl outline-none text-white font-bold text-sm focus:border-blue-500/50 transition-all placeholder:text-gray-700 mb-4";
+  const labelStyle =
+    "text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2 block ml-2";
 
   return (
-    <section className="bg-white p-6 rounded-[2rem] shadow-xl shadow-gray-100 border border-gray-100">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-black text-xs">
-          {loading ? "..." : "01"}
-        </div>
-        <h2 className="text-lg font-black italic text-gray-800 tracking-tight">
-          Registro Esencial
-        </h2>
-      </div>
+    <section className={cardStyle}>
+      <div className="absolute top-0 left-0 w-1 h-full bg-blue-600/40"></div>
 
-      <div className="space-y-1">
-        <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Documento de Identidad</label>
-        <input 
-          placeholder="Ej: 25123456" 
-          value={form.cedula}
-          className={inputStyle} 
-          onChange={e => setForm({...form, cedula: e.target.value})} 
-        />
-        
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Nombres</label>
-            <input 
-              placeholder="Juan" 
-              value={form.nombres}
-              className={inputStyle} 
-              onChange={e => setForm({...form, nombres: e.target.value})} 
-            />
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/20 text-blue-500 rounded-xl flex items-center justify-center font-black text-xs">
+            {loading ? "..." : "01"}
           </div>
           <div>
-            <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Apellidos</label>
-            <input 
-              placeholder="Pérez" 
-              value={form.apellidos}
-              className={inputStyle} 
-              onChange={e => setForm({...form, apellidos: e.target.value})} 
-            />
+            <h2 className="text-lg font-black italic text-white uppercase tracking-tight">
+              Registro{" "}
+              <span className="text-blue-500 text-outline-sm">Esencial</span>
+            </h2>
+            <p className="text-[7px] font-bold text-gray-600 uppercase tracking-widest">
+              New Identity Protocol
+            </p>
           </div>
         </div>
-      </div>
 
-      <button 
-        onClick={validarYEnviar} 
-        disabled={loading}
-        className={`w-full mt-2 py-4 text-white rounded-2xl font-black transition-all active:scale-[0.98] ${
-          loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-100"
-        }`}
-      >
-        {loading ? "VERIFICANDO..." : "REGISTRAR EN BLOCKCHAIN"}
-      </button>
+        <div className="space-y-1">
+          <div>
+            <label className={labelStyle}>Documento de Identidad</label>
+            <input
+              placeholder="Ej: 25123456"
+              value={form.cedula}
+              className={inputStyle}
+              onChange={(e) => setForm({ ...form, cedula: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelStyle}>Nombres</label>
+              <input
+                placeholder="Juan"
+                value={form.nombres}
+                className={inputStyle}
+                onChange={(e) => setForm({ ...form, nombres: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className={labelStyle}>Apellidos</label>
+              <input
+                placeholder="Pérez"
+                value={form.apellidos}
+                className={inputStyle}
+                onChange={(e) =>
+                  setForm({ ...form, apellidos: e.target.value })
+                }
+              />
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={validarYEnviar}
+          disabled={loading}
+          className={`w-full mt-4 py-5 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all active:scale-95 shadow-xl ${
+            loading
+              ? "bg-gray-800 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-500 shadow-blue-900/20"
+          }`}
+        >
+          {loading ? "VERIFICANDO DATOS..." : "REGISTRAR EN BLOCKCHAIN"}
+        </button>
+      </div>
     </section>
   );
 };

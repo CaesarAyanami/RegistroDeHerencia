@@ -1,40 +1,50 @@
 import React, { useState } from "react";
 
-const DefinirHerencia = ({ contract, propContract, onPrepare, showNotification }) => {
-  // Estados del Buscador
+const DefinirHerencia = ({
+  contract,
+  propContract,
+  onPrepare,
+  showNotification,
+}) => {
+  // --- LÓGICA INTACTA ---
   const [ciBusqueda, setCiBusqueda] = useState("");
   const [listaPropiedades, setListaPropiedades] = useState([]);
   const [buscando, setBuscando] = useState(false);
-  
-  // Estados de la Herencia
   const [propiedadSeleccionada, setPropiedadSeleccionada] = useState(null);
-  const [herederos, setHerederos] = useState([]); 
+  const [herederos, setHerederos] = useState([]);
   const [tempCi, setTempCi] = useState("");
   const [tempPorc, setTempPorc] = useState("");
 
   const consultarBienes = async () => {
-    if (!ciBusqueda.trim()) return showNotification("Ingresa la CI del titular", "alert");
+    if (!ciBusqueda.trim())
+      return showNotification("Ingresa la CI del titular", "alert");
     setBuscando(true);
     setPropiedadSeleccionada(null);
     try {
-      const data = await propContract.methods.listarPropiedadesPorCI(ciBusqueda.trim()).call();
+      const data = await propContract.methods
+        .listarPropiedadesPorCI(ciBusqueda.trim())
+        .call();
       setListaPropiedades(data);
-      if (data.length === 0) showNotification("No se encontraron bienes para esta CI", "info");
+      if (data.length === 0)
+        showNotification("No se encontraron bienes para esta CI", "info");
     } catch (e) {
-      showNotification("Error al consultar el registro de propiedades", "error");
+      showNotification("Error al consultar el registro", "error");
     } finally {
       setBuscando(false);
     }
   };
 
   const agregarHeredero = () => {
-    if (!tempCi.trim() || !tempPorc) return showNotification("Completa los datos del heredero", "alert");
+    if (!tempCi.trim() || !tempPorc)
+      return showNotification("Completa los datos del heredero", "alert");
     const porcNum = parseInt(tempPorc);
-    if (isNaN(porcNum) || porcNum <= 0) return showNotification("Porcentaje inválido", "alert");
-    
+    if (isNaN(porcNum) || porcNum <= 0)
+      return showNotification("Porcentaje inválido", "alert");
+
     const totalActual = herederos.reduce((acc, curr) => acc + curr.porc, 0);
-    if (totalActual + porcNum > 100) return showNotification("La suma supera el 100%", "error");
-    
+    if (totalActual + porcNum > 100)
+      return showNotification("La suma supera el 100%", "error");
+
     setHerederos([...herederos, { ci: tempCi.trim(), porc: porcNum }]);
     setTempCi("");
     setTempPorc("");
@@ -47,22 +57,21 @@ const DefinirHerencia = ({ contract, propContract, onPrepare, showNotification }
 
   const prepararTransaccion = () => {
     const total = herederos.reduce((acc, curr) => acc + curr.porc, 0);
-    if (total !== 100) return showNotification("La suma debe ser exactamente 100%", "error");
-    if (!propiedadSeleccionada) return showNotification("Selecciona una propiedad", "error");
+    if (total !== 100)
+      return showNotification("La suma debe ser exactamente 100%", "error");
+    if (!propiedadSeleccionada)
+      return showNotification("Selecciona una propiedad", "error");
 
-    const cis = herederos.map(h => h.ci);
-    const porcs = herederos.map(h => h.porc);
+    const cis = herederos.map((h) => h.ci);
+    const porcs = herederos.map((h) => h.porc);
 
     try {
-      // 🔹 CAMBIO CLAVE: Ahora pasamos 4 argumentos según tu nuevo Herencias.sol:
-      // 1. ID, 2. CI del Dueño, 3. Lista CIs Herederos, 4. Lista Porcentajes
       const metodo = contract.methods.definirHerencia(
-        propiedadSeleccionada.idPropiedad, 
-        ciBusqueda.trim(), // Este es el _ciDueno que pide el contrato
-        cis, 
+        propiedadSeleccionada.idPropiedad,
+        ciBusqueda.trim(),
+        cis,
         porcs
       );
-      
       onPrepare(metodo);
     } catch (err) {
       showNotification("Error al construir la transacción", "error");
@@ -71,56 +80,70 @@ const DefinirHerencia = ({ contract, propContract, onPrepare, showNotification }
 
   const totalPorc = herederos.reduce((acc, curr) => acc + curr.porc, 0);
 
+  // --- DISEÑO REDISEÑADO (FLUJO VERTICAL DE CONFIGURACIÓN) ---
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-2">
-      
-      {/* SECCIÓN 1: BUSCADOR DE ACTIVOS */}
-      <section className="bg-[#1a1c1e] p-6 rounded-[2.5rem] shadow-2xl border border-gray-800">
-        <h2 className="text-xl font-black italic text-white uppercase mb-6 flex items-center gap-3">
-          <span className="w-3 h-6 bg-purple-500 rounded-sm shadow-[0_0_15px_rgba(168,85,247,0.4)]"></span> 
-          1. Activos del Titular
+    <div className="flex flex-col gap-10 max-w-4xl mx-auto p-2">
+      {/* 1. SELECCIÓN DE ACTIVO PARA PROTOCOLIZAR */}
+      <section className="bg-[#0d0f14] p-8 rounded-[3rem] border border-white/5 shadow-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 blur-[80px] pointer-events-none"></div>
+
+        <h2 className="text-xl font-black italic text-white uppercase mb-8 flex items-center gap-4 tracking-tighter">
+          <span className="w-1.5 h-8 bg-purple-500 rounded-full shadow-[0_0_15px_#a855f7]"></span>
+          Selección de Patrimonio
         </h2>
 
-        <div className="flex gap-2 mb-8 bg-[#2d2f31] p-2 rounded-2xl border border-white/5">
-          <input 
-            className="flex-1 bg-transparent outline-none text-sm font-bold px-4 text-white placeholder:text-gray-500" 
-            placeholder="Cédula del Propietario..."
+        <div className="flex gap-3 mb-10 bg-black/40 p-2 rounded-2xl border border-white/5 focus-within:border-purple-500/30 transition-all duration-500">
+          <input
+            className="flex-1 bg-transparent outline-none text-sm font-bold px-6 text-white placeholder:text-gray-700 uppercase tracking-widest"
+            placeholder="CI del Propietario..."
             value={ciBusqueda}
             onChange={(e) => setCiBusqueda(e.target.value)}
           />
-          <button 
+          <button
             onClick={consultarBienes}
-            className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase transition-all shadow-lg"
+            className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg active:scale-95"
           >
-            {buscando ? "..." : "BUSCAR"}
+            {buscando ? "..." : "Consultar"}
           </button>
         </div>
 
-        <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
+        <div className="space-y-4 max-h-[350px] overflow-y-auto pr-3 custom-scrollbar">
           {listaPropiedades.map((p, idx) => (
-            <div 
+            <div
               key={idx}
               onClick={() => {
                 setPropiedadSeleccionada(p);
-                setHerederos([]); // Limpiar herederos al cambiar de propiedad
+                setHerederos([]);
               }}
-              className={`p-5 rounded-[1.8rem] border-2 cursor-pointer transition-all ${
-                propiedadSeleccionada?.idPropiedad === p.idPropiedad 
-                ? "bg-purple-600/10 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.1)]" 
-                : "bg-[#2d2f31] border-transparent hover:border-gray-700"
+              className={`p-6 rounded-[2.2rem] border-2 cursor-pointer transition-all duration-500 relative ${
+                propiedadSeleccionada?.idPropiedad === p.idPropiedad
+                  ? "bg-purple-500/10 border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.1)]"
+                  : "bg-black/20 border-transparent hover:border-white/10"
               }`}
             >
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[10px] font-black text-purple-400 uppercase tracking-tighter">
-                  Registro #{p.idPropiedad.toString()}
+                <span
+                  className={`text-[10px] font-black uppercase tracking-widest ${
+                    propiedadSeleccionada?.idPropiedad === p.idPropiedad
+                      ? "text-purple-400"
+                      : "text-gray-600"
+                  }`}
+                >
+                  Reg: {p.idPropiedad.toString()}
                 </span>
                 {p.enHerencia && (
-                  <span className="text-[8px] bg-amber-500/20 text-amber-500 px-2 py-1 rounded-md font-black uppercase italic">
+                  <span className="text-[8px] bg-white/5 text-amber-500 px-3 py-1 rounded-full font-black uppercase tracking-tighter border border-amber-500/20">
                     Plan Existente
                   </span>
                 )}
               </div>
-              <p className="text-sm font-bold text-gray-200 leading-tight">
+              <p
+                className={`text-sm font-bold leading-tight ${
+                  propiedadSeleccionada?.idPropiedad === p.idPropiedad
+                    ? "text-white"
+                    : "text-gray-500"
+                }`}
+              >
                 {p.descripcion}
               </p>
             </div>
@@ -128,64 +151,124 @@ const DefinirHerencia = ({ contract, propContract, onPrepare, showNotification }
         </div>
       </section>
 
-      {/* SECCIÓN 2: CONFIGURACIÓN DE HERENCIA */}
-      <section className={`bg-[#1a1c1e] p-6 rounded-[2.5rem] shadow-2xl border-t-8 border-purple-600 transition-all duration-500 ${!propiedadSeleccionada ? 'opacity-20 grayscale pointer-events-none' : 'opacity-100'}`}>
-        <h2 className="text-xl font-black italic text-white uppercase mb-6">2. Distribución de Bienes</h2>
-        
-        <div className="mb-6 p-4 bg-purple-600/10 rounded-2xl border border-purple-500/20">
-          <p className="text-[9px] font-black text-purple-400 uppercase tracking-[0.2em] mb-1">Activo Seleccionado:</p>
-          <p className="text-sm font-bold text-white truncate">{propiedadSeleccionada?.descripcion || "Ninguno"}</p>
+      {/* 2. CONFIGURACIÓN DEL PLAN DE HERENCIA */}
+      <section
+        className={`bg-[#0d0f14] p-8 rounded-[3rem] border border-white/5 shadow-2xl transition-all duration-700 relative ${
+          !propiedadSeleccionada
+            ? "opacity-10 grayscale blur-[4px] pointer-events-none translate-y-12"
+            : "opacity-100 translate-y-0"
+        }`}
+      >
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-purple-500 to-transparent"></div>
+
+        <h2 className="text-xl font-black italic text-white uppercase mb-8 tracking-tighter">
+          Configuración de{" "}
+          <span className="text-purple-500">Adjudicaciones</span>
+        </h2>
+
+        {/* Header del Activo */}
+        <div className="mb-8 p-6 bg-purple-500/5 rounded-3xl border border-purple-500/10">
+          <p className="text-[8px] font-black text-purple-500/60 uppercase tracking-[0.4em] mb-2">
+            Activo en Protocolización
+          </p>
+          <p className="text-sm font-bold text-white italic">
+            "{propiedadSeleccionada?.descripcion || "---"}"
+          </p>
         </div>
 
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <input 
-              className="flex-1 bg-[#2d2f31] border border-gray-700 p-4 rounded-xl text-sm font-bold text-white outline-none focus:border-purple-500 transition-all" 
-              placeholder="CI del Heredero"
-              value={tempCi} onChange={e => setTempCi(e.target.value)}
+        {/* Inputs de Herederos */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-10">
+          <div className="md:col-span-8 bg-black/40 p-2 rounded-2xl border border-white/5 focus-within:border-purple-500/30 transition-all">
+            <input
+              className="w-full bg-transparent outline-none text-sm font-bold px-4 py-2 text-white placeholder:text-gray-800"
+              placeholder="CI del Heredero..."
+              value={tempCi}
+              onChange={(e) => setTempCi(e.target.value)}
             />
-            <input 
-              className="w-20 bg-[#2d2f31] border border-gray-700 p-4 rounded-xl text-sm font-bold text-white text-center outline-none focus:border-purple-500 transition-all" 
+          </div>
+          <div className="md:col-span-2 bg-black/40 p-2 rounded-2xl border border-white/5 focus-within:border-purple-500/30 transition-all">
+            <input
+              className="w-full bg-transparent outline-none text-sm font-black px-2 py-2 text-white text-center placeholder:text-gray-800"
               placeholder="%"
               type="number"
-              value={tempPorc} onChange={e => setTempPorc(e.target.value)}
+              value={tempPorc}
+              onChange={(e) => setTempPorc(e.target.value)}
             />
-            <button onClick={agregarHeredero} className="bg-white text-black px-6 rounded-xl font-black text-lg hover:bg-purple-500 hover:text-white transition-all">+</button>
           </div>
+          <button
+            onClick={agregarHeredero}
+            className="md:col-span-2 bg-white text-black rounded-2xl font-black text-xl hover:bg-purple-600 hover:text-white transition-all active:scale-95 shadow-lg"
+          >
+            +
+          </button>
+        </div>
 
-          <div className="space-y-2 min-h-[180px] bg-[#121416] p-4 rounded-2xl border border-white/5">
-            {herederos.length === 0 && (
-              <p className="text-gray-600 text-[10px] text-center mt-16 uppercase font-bold tracking-widest italic">No hay herederos agregados</p>
-            )}
-            {herederos.map((h, i) => (
-              <div key={i} className="flex justify-between items-center bg-[#2d2f31] p-4 rounded-xl border border-white/5 group">
+        {/* Lista de Herederos */}
+        <div className="space-y-3 min-h-[220px] bg-black/20 p-6 rounded-[2.5rem] border border-white/5 mb-8">
+          {herederos.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center opacity-20 py-16">
+              <p className="text-[10px] font-black uppercase tracking-[0.4em]">
+                Sin Asignaciones
+              </p>
+            </div>
+          ) : (
+            herederos.map((h, i) => (
+              <div
+                key={i}
+                className="flex justify-between items-center bg-black/40 p-5 rounded-2xl border border-white/5 group hover:border-purple-500/30 transition-all"
+              >
                 <div className="flex flex-col">
-                   <span className="text-[8px] font-black text-gray-500 uppercase">Beneficiario</span>
-                   <span className="text-xs font-bold text-white">CI: {h.ci}</span>
+                  <span className="text-[8px] font-black text-purple-500 uppercase tracking-widest mb-1">
+                    Heredero Designado
+                  </span>
+                  <span className="text-sm font-bold text-white tracking-widest uppercase">
+                    CI: {h.ci}
+                  </span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-lg font-black text-purple-500">{h.porc}%</span>
-                  <button onClick={() => eliminarHeredero(i)} className="text-gray-600 hover:text-red-500 font-bold text-xs transition-all opacity-0 group-hover:opacity-100">✕</button>
+                <div className="flex items-center gap-6">
+                  <span className="text-2xl font-black text-white italic">
+                    {h.porc}%
+                  </span>
+                  <button
+                    onClick={() => eliminarHeredero(i)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500/10 text-red-500/40 hover:text-red-500 hover:bg-red-500/20 transition-all"
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
-            ))}
+            ))
+          )}
+        </div>
+
+        {/* Footer de Acción */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center px-8 py-6 bg-white/5 rounded-[2rem] border border-white/5">
+            <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">
+              Carga de Adjudicación
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span
+                className={`text-4xl font-black italic transition-colors ${
+                  totalPorc === 100 ? "text-green-500" : "text-purple-500"
+                }`}
+              >
+                {totalPorc}
+              </span>
+              <span className="text-lg font-black text-gray-600">%</span>
+            </div>
           </div>
 
-          <div className="flex justify-between items-center py-4 px-2 bg-white/5 rounded-xl">
-             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Acumulado:</span>
-             <span className={`text-2xl font-black ${totalPorc === 100 ? 'text-green-500' : 'text-purple-500'}`}>{totalPorc}%</span>
-          </div>
-
-          <button 
+          <button
             onClick={prepararTransaccion}
             disabled={totalPorc !== 100}
-            className={`w-full py-5 rounded-[1.5rem] font-black text-[12px] uppercase tracking-[0.2em] transition-all shadow-2xl transform active:scale-95 ${
-              totalPorc === 100 
-              ? 'bg-purple-600 text-white hover:bg-purple-500 shadow-purple-500/20' 
-              : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+            className={`w-full py-6 rounded-[2.2rem] font-black text-[12px] uppercase tracking-[0.3em] transition-all shadow-2xl active:scale-[0.98] ${
+              totalPorc === 100
+                ? "bg-purple-600 text-white hover:bg-purple-500 shadow-purple-600/20"
+                : "bg-white/5 text-gray-700 cursor-not-allowed grayscale"
             }`}
           >
-            Protocolizar Herencia
+            Protocolizar en Blockchain
           </button>
         </div>
       </section>

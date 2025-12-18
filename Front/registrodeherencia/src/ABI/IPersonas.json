@@ -54,13 +54,11 @@
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.19;\r\n\r\ninterface IPersonas {\r\n    function obtenerIdPorCi(string memory _ci) external view returns (uint256);\r\n    function obtenerIdentidad(uint256 _id) external view returns (string memory, address);\r\n}\r\n",
-  "sourcePath": "C:\\Users\\Cesar\\Documents\\GitHub\\RegistroDeHerencia\\BlockChain\\RegistroDeHerencia\\contracts\\IPersonas.sol",
+  "sourcePath": "C:\\Users\\Usuario\\Desktop\\RegistroDeHerencia\\RegistroDeHerencia\\BlockChain\\RegistroDeHerencia\\contracts\\IPersonas.sol",
   "ast": {
     "absolutePath": "project:/contracts/IPersonas.sol",
     "exportedSymbols": {
-      "IPersonas": [
-        331
-      ]
+      "IPersonas": [331]
     },
     "id": 332,
     "license": "MIT",
@@ -68,12 +66,7 @@
     "nodes": [
       {
         "id": 314,
-        "literals": [
-          "solidity",
-          "^",
-          "0.8",
-          ".19"
-        ],
+        "literals": ["solidity", "^", "0.8", ".19"],
         "nodeType": "PragmaDirective",
         "src": "33:24:1"
       },
@@ -85,9 +78,7 @@
         "contractKind": "interface",
         "fullyImplemented": false,
         "id": 331,
-        "linearizedBaseContracts": [
-          331
-        ],
+        "linearizedBaseContracts": [331],
         "name": "IPersonas",
         "nameLocation": "71:9:1",
         "nodeType": "ContractDefinition",
@@ -300,7 +291,7 @@
   },
   "networks": {},
   "schemaVersion": "3.4.16",
-  "updatedAt": "2025-12-17T16:50:41.381Z",
+  "updatedAt": "2025-12-18T02:26:26.963Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},

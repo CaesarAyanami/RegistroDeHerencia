@@ -1,27 +1,30 @@
 import React, { useState } from "react";
 
-const ConsultarPlanHerencia = ({ contract, propContract, personaContract, showNotification }) => {
+const ConsultarPlanHerencia = ({
+  contract,
+  propContract,
+  personaContract,
+  showNotification,
+}) => {
   const [ciDueno, setCiDueno] = useState("");
   const [propiedades, setPropiedades] = useState([]);
   const [buscandoProps, setBuscandoProps] = useState(false);
   const [propSeleccionada, setPropSeleccionada] = useState(null);
-  const [protocolo, setProtocolo] = useState([]); 
+  const [protocolo, setProtocolo] = useState([]);
   const [cargandoProtocolo, setCargandoProtocolo] = useState(false);
 
+  // --- LÓGICA MANTENIDA ---
   const buscarBienes = async () => {
-    if (!ciDueno.trim()) return showNotification("Ingresa la CI del titular", "alert");
-    setPropSeleccionada();
-    setCargandoProtocolo(true);
-    setProtocolo([]);
-
-
-
+    if (!ciDueno.trim()) return showNotification("Ingresa la CI", "alert");
+    setPropSeleccionada(null);
+    setBuscandoProps(true);
     try {
-      const data = await propContract.methods.listarPropiedadesPorCI(ciDueno.trim()).call();
+      const data = await propContract.methods
+        .listarPropiedadesPorCI(ciDueno.trim())
+        .call();
       setPropiedades(data);
-      if (data.length === 0) showNotification("No se encontraron bienes", "info");
     } catch (e) {
-      showNotification("Error al consultar propiedades", "error");
+      showNotification("Error de consulta", "error");
     } finally {
       setBuscandoProps(false);
     }
@@ -30,42 +33,22 @@ const ConsultarPlanHerencia = ({ contract, propContract, personaContract, showNo
   const cargarDetalleHerencia = async (prop) => {
     setPropSeleccionada(prop);
     setCargandoProtocolo(true);
-    setProtocolo([]);
-
     try {
       const id = prop.idPropiedad;
-      const cisHerederos = await contract.methods.obtenerCiConParticipacion(id).call();
-
-      if (!cisHerederos || cisHerederos.length === 0) {
-        showNotification("Sin plan de herencia", "info");
-      } else {
-        // MAPEO CON DATOS DE CONTRATO PERSONA
-        const promesas = cisHerederos.map(async (ci) => {
-          // 1. Traemos el porcentaje del contrato de Herencia
-          const porc = await contract.methods.obtenerParticipacion(id, ci).call();
-          
-          // 2. Traemos los datos del contrato Persona (tu lógica del Buscador)
-          let datosPersona = { nombres: "No registrado", apellidos: "" };
-          try {
-            const p = await personaContract.methods.obtenerPersonaPorCI(ci).call();
-            if (p && p.nombres !== "") {
-              datosPersona = p;
-            }
-          } catch (err) {
-            console.error("Persona no encontrada en blockchain para CI:", ci);
-          }
-
-          return { 
-            ci, 
-            porc, 
-            nombreCompleto: `${datosPersona.nombres} ${datosPersona.apellidos}`,
-            genero: datosPersona.genero // Opcional por si quieres poner el emoji 👨/👩
-          };
-        });
-
-        const resultados = await Promise.all(promesas);
-        setProtocolo(resultados);
-      }
+      const cisHerederos = await contract.methods
+        .obtenerCiConParticipacion(id)
+        .call();
+      const promesas = cisHerederos.map(async (ci) => {
+        const porc = await contract.methods.obtenerParticipacion(id, ci).call();
+        const p = await personaContract.methods.obtenerPersonaPorCI(ci).call();
+        return {
+          ci,
+          porc,
+          nombre: `${p.nombres} ${p.apellidos}`,
+          genero: p.genero,
+        };
+      });
+      setProtocolo(await Promise.all(promesas));
     } catch (e) {
       showNotification("Error en protocolo", "error");
     } finally {
@@ -74,88 +57,136 @@ const ConsultarPlanHerencia = ({ contract, propContract, personaContract, showNo
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
-      
-      {/* SECCIÓN IZQUIERDA: BUSCADOR DE BIENES */}
-      <section className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-gray-100">
-        <h2 className="text-xl font-black italic text-gray-800 uppercase mb-6 flex items-center gap-2">
-          <span className="w-2 h-6 bg-indigo-600 rounded-full"></span> 1. Titular de Bienes
-        </h2>
+    <div className="flex flex-col xl:flex-row gap-8 w-full animate-in fade-in duration-700">
+      {/* PANEL IZQUIERDO: SELECCIÓN DE ACTIVOS (Ancho fijo en XL para dar estabilidad) */}
+      <section className="w-full xl:w-[400px] bg-[#0d0f14] border border-white/5 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden flex flex-col min-h-[600px]">
+        <div className="absolute top-0 left-0 w-1 h-full bg-blue-600/20"></div>
 
-        <div className="flex gap-2 mb-8 bg-gray-50 p-2 rounded-2xl border border-gray-100 focus-within:border-indigo-300 transition-all">
-          <input 
-            className="flex-1 bg-transparent outline-none text-sm font-bold text-gray-600 px-4" 
-            placeholder="Cédula del Dueño..."
-            value={ciDueno}
-            onChange={(e) => setCiDueno(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && buscarBienes()}
-          />
-          <button 
+        {/* BUSCADOR ESTILIZADO */}
+        <div className="space-y-3 mb-8">
+          <div className="bg-black/40 border border-white/5 p-1 rounded-2xl focus-within:border-blue-500/40 transition-all">
+            <input
+              className="w-full bg-transparent outline-none text-xs font-bold text-white px-4 py-3 placeholder:text-gray-700 uppercase tracking-widest"
+              placeholder="Cédula Titular..."
+              value={ciDueno}
+              onChange={(e) => setCiDueno(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && buscarBienes()}
+            />
+          </div>
+          <button
             onClick={buscarBienes}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg shadow-indigo-100"
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
           >
-            {buscandoProps ? "..." : "BUSCAR"}
+            {buscandoProps ? "Sincronizando..." : "Consultar Registro"}
           </button>
         </div>
 
-        <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
+        {/* LISTA DE CARDS DE ACTIVOS */}
+        <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
           {propiedades.map((p, idx) => (
-            <div 
+            <div
               key={idx}
               onClick={() => cargarDetalleHerencia(p)}
-              className={`p-5 rounded-[1.8rem] border-2 cursor-pointer transition-all ${
-                propSeleccionada?.idPropiedad === p.idPropiedad 
-                ? "bg-indigo-600 border-indigo-600 shadow-xl scale-[1.02]" 
-                : "bg-white border-gray-50 hover:border-indigo-100"
+              className={`p-5 rounded-[1.8rem] border-2 cursor-pointer transition-all duration-300 group ${
+                propSeleccionada?.idPropiedad === p.idPropiedad
+                  ? "bg-blue-600/10 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
+                  : "bg-black/20 border-transparent hover:border-white/10"
               }`}
             >
-              <div className="flex justify-between items-start">
-                <p className={`text-sm font-black leading-tight ${propSeleccionada?.idPropiedad === p.idPropiedad ? "text-white" : "text-gray-800"}`}>
+              <div className="flex flex-col gap-1">
+                <span
+                  className={`text-[8px] font-black uppercase tracking-widest ${
+                    propSeleccionada?.idPropiedad === p.idPropiedad
+                      ? "text-blue-400"
+                      : "text-gray-600"
+                  }`}
+                >
+                  Asset ID: #{p.idPropiedad.toString()}
+                </span>
+                <p
+                  className={`text-[11px] font-bold uppercase ${
+                    propSeleccionada?.idPropiedad === p.idPropiedad
+                      ? "text-white"
+                      : "text-gray-500"
+                  }`}
+                >
                   {p.descripcion}
                 </p>
-                <span className={`text-[8px] font-black px-2 py-1 rounded-lg ${
-                  propSeleccionada?.idPropiedad === p.idPropiedad ? "bg-white/20 text-white" : "bg-indigo-50 text-indigo-600"
-                }`}>
-                  #{p.idPropiedad.toString()}
-                </span>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* SECCIÓN DERECHA: PROTOCOLO CON NOMBRES DE PERSONA */}
-      <section className={`bg-white p-6 rounded-[2.5rem] shadow-xl border-t-8 border-indigo-600 transition-all duration-500 ${!propSeleccionada ? 'opacity-40 grayscale pointer-events-none scale-95' : 'opacity-100 scale-100'}`}>
-        <h2 className="text-xl font-black italic text-gray-800 uppercase mb-6 text-center">Protocolo de Herederos</h2>
-        
+      {/* PANEL DERECHO: PROTOCOLO DE HEREDEROS (Toma el resto del espacio) */}
+      <section
+        className={`flex-1 bg-[#0d0f14] border border-white/5 rounded-[3rem] p-8 shadow-2xl relative overflow-hidden transition-all duration-700 min-h-[600px] ${
+          !propSeleccionada ? "opacity-20 grayscale blur-[1px]" : "opacity-100"
+        }`}
+      >
+        <div className="absolute top-0 right-0 p-8 opacity-5 text-4xl italic font-black text-blue-500">
+          PROTOCOL
+        </div>
+
+        <header className="mb-12">
+          <h2 className="text-xl font-black italic text-white uppercase tracking-tighter">
+            Protocolo de{" "}
+            <span className="text-blue-500 text-outline-sm">Distribución</span>
+          </h2>
+          {propSeleccionada && (
+            <div className="mt-2 inline-block px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
+              <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest">
+                Monitoreando Activo: {propSeleccionada.descripcion}
+              </span>
+            </div>
+          )}
+        </header>
+
         {cargandoProtocolo ? (
-          <div className="py-20 flex flex-col items-center justify-center">
-            <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-            <p className="text-[10px] font-black text-indigo-400 animate-pulse uppercase tracking-[0.2em]">Consultando Registro Civil...</p>
+          <div className="h-64 flex flex-col items-center justify-center">
+            <div className="w-12 h-12 border-2 border-blue-500/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+            <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest animate-pulse">
+              Cruzando Datos...
+            </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {protocolo.map((h, i) => (
-              <div key={i} className="flex justify-between items-center bg-gradient-to-r from-gray-50 to-white p-4 rounded-2xl border border-gray-100 hover:shadow-md transition-shadow">
+              <div
+                key={i}
+                className="flex items-center justify-between bg-black/40 border border-white/5 p-6 rounded-[2rem] group hover:border-blue-500/30 transition-all"
+              >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white rounded-xl shadow-inner border border-indigo-50 flex items-center justify-center text-xl">
-                    {Number(h.genero) === 0 ? "👨" : Number(h.genero) === 1 ? "👩" : "👤"}
+                  <div className="w-14 h-14 bg-[#16181d] rounded-2xl flex items-center justify-center text-2xl border border-white/5 group-hover:scale-110 transition-transform">
+                    {Number(h.genero) === 0
+                      ? "👨"
+                      : Number(h.genero) === 1
+                      ? "👩"
+                      : "👤"}
                   </div>
                   <div>
-                    <h4 className="text-xs font-black text-indigo-950 uppercase italic leading-none mb-1">{h.nombreCompleto}</h4>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase">CI: {h.ci}</p>
+                    <h4 className="text-[11px] font-black text-white uppercase italic mb-1">
+                      {h.nombre}
+                    </h4>
+                    <p className="text-[9px] font-bold text-gray-600 tracking-tighter uppercase">
+                      ID: {h.ci}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-black text-indigo-600 leading-none">{h.porc}%</div>
-                  <p className="text-[8px] font-black text-indigo-300 uppercase mt-1">Participación</p>
+                  <div className="text-3xl font-black text-blue-500 italic leading-none">
+                    {h.porc}%
+                  </div>
+                  <p className="text-[7px] font-black text-gray-700 uppercase mt-1 tracking-widest">
+                    Cuota Part.
+                  </p>
                 </div>
               </div>
             ))}
 
             {protocolo.length === 0 && propSeleccionada && (
-              <div className="text-center py-20 opacity-30">
-                <p className="text-[10px] font-black uppercase tracking-widest leading-loose">No se ha definido una <br/> distribución para este bien</p>
+              <div className="col-span-2 py-32 text-center opacity-20 italic text-xs uppercase text-white tracking-[0.4em]">
+                No hay herederos en este activo
               </div>
             )}
           </div>

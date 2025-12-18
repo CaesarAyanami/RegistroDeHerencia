@@ -8,7 +8,7 @@ export default function DAppPersona() {
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState("");
   const [contract, setContract] = useState(null);
-  const [error, setError] = useState(null); // Nuevo estado de error
+  const [error, setError] = useState(null);
 
   // Inputs
   const [cedula, setCedula] = useState("");
@@ -17,7 +17,7 @@ export default function DAppPersona() {
   const [consultaCI, setConsultaCI] = useState("");
   const [persona, setPersona] = useState(null);
 
-  // Función centralizada para cargar datos y contratos
+  // Lógica de carga intacta
   const loadWeb3Data = async (web3Instance, accs) => {
     if (!accs || accs.length === 0) {
       setError("MetaMask no conectada o cuenta no seleccionada.");
@@ -42,21 +42,16 @@ export default function DAppPersona() {
     const init = async () => {
       if (window.ethereum) {
         const web3Instance = new Web3(window.ethereum);
-
         try {
-          // Solicitar cuentas
           const accs = await window.ethereum.request({
             method: "eth_requestAccounts",
           });
           loadWeb3Data(web3Instance, accs);
 
-          // --- LISTENER (ESCUCHA) PARA CAMBIOS DE CUENTA ---
           const handleAccountsChanged = (newAccounts) => {
-            console.log("Cuentas cambiadas:", newAccounts);
             loadWeb3Data(web3Instance, newAccounts);
           };
 
-          // --- LISTENER PARA CAMBIOS DE RED ---
           const handleChainChanged = () => {
             window.location.reload();
           };
@@ -64,7 +59,6 @@ export default function DAppPersona() {
           window.ethereum.on("accountsChanged", handleAccountsChanged);
           window.ethereum.on("chainChanged", handleChainChanged);
 
-          // Función de limpieza al desmontar el componente
           return () => {
             if (window.ethereum && window.ethereum.removeListener) {
               window.ethereum.removeListener(
@@ -78,7 +72,6 @@ export default function DAppPersona() {
             }
           };
         } catch (e) {
-          console.error("Error de conexión inicial con MetaMask:", e);
           setError("Error al conectar con MetaMask. Revise permisos.");
         }
       } else {
@@ -88,42 +81,30 @@ export default function DAppPersona() {
     init();
   }, []);
 
-  // Funciones de contrato
   const registrarPersona = async () => {
-    if (!contract || !selectedAccount) {
-      alert("Conecte MetaMask primero.");
-      return;
-    }
-    if (!cedula || !nombres || !apellidos) {
-      alert("Completa todos los campos");
-      return;
-    }
+    if (!contract || !selectedAccount)
+      return alert("Conecte MetaMask primero.");
+    if (!cedula || !nombres || !apellidos)
+      return alert("Completa todos los campos");
     try {
       await contract.methods
         .registrarPersonaEsencial(cedula, nombres, apellidos)
         .send({ from: selectedAccount });
       alert("Persona registrada!");
-      // Limpiar campos
       setCedula("");
       setNombres("");
       setApellidos("");
     } catch (err) {
-      console.error(err);
-      alert("Error al registrar persona. Revise la consola.");
+      alert("Error al registrar persona.");
     }
   };
 
   const consultarPersona = async () => {
-    if (!contract) {
-      alert("Conecte MetaMask primero.");
-      return;
-    }
+    if (!contract) return alert("Conecte MetaMask primero.");
     try {
       const datos = await contract.methods
         .obtenerPersonaPorCI(consultaCI)
         .call();
-
-      // Asumiendo que el contrato devuelve [ci, nombres, apellidos, wallet]
       if (datos && datos[1]) {
         setPersona({
           cedula: datos[0],
@@ -136,109 +117,204 @@ export default function DAppPersona() {
         setPersona(null);
       }
     } catch (err) {
-      console.error(err);
-      alert("Error al consultar persona. Revise la CI.");
+      alert("Error al consultar persona.");
       setPersona(null);
     }
   };
 
+  // ESTILOS DE COMPONENTES REUTILIZABLES
+  const cardStyle =
+    "bg-[#0d0f14] p-8 rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden";
+  const inputStyle =
+    "w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none text-white font-bold text-sm focus:border-blue-500/50 transition-all placeholder:text-gray-700";
+  const labelStyle =
+    "text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2 block ml-2";
+
   return (
-    <div className="bg-white p-6 rounded shadow mt-6">
-      <h2 className="text-xl font-bold mb-4">Registro Civil DApp</h2>
+    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-in fade-in duration-700">
+      {/* HEADER DE LA SECCIÓN */}
+      <header className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
+        <div>
+          <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">
+            Registro <span className="text-blue-500 text-outline">Civil</span>
+          </h2>
+          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.5em] mt-2">
+            Identidad On-Chain Protocol
+          </p>
+        </div>
+
+        {/* Selector de cuenta estilizado como Terminal */}
+        <div className="bg-black/40 border border-white/5 p-2 rounded-2xl flex items-center gap-4">
+          <div className="pl-4">
+            <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest block">
+              Nodo Activo
+            </span>
+            <select
+              value={selectedAccount}
+              onChange={(e) => setSelectedAccount(e.target.value)}
+              className="bg-transparent text-xs font-mono text-gray-400 outline-none cursor-pointer"
+              disabled={accounts.length === 0}
+            >
+              {accounts.map((acc) => (
+                <option key={acc} value={acc} className="bg-[#0d0f14]">
+                  {acc.substring(0, 12)}...
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="w-10 h-10 bg-blue-600/10 border border-blue-500/20 rounded-xl flex items-center justify-center text-blue-500">
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+              />
+            </svg>
+          </div>
+        </div>
+      </header>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-          {error}
+        <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest animate-bounce">
+          ⚠ {error}
         </div>
       )}
 
-      {/* Selector de cuenta */}
-      <div className="mb-4">
-        <label className="font-semibold">Cuenta activa:</label>
-        <select
-          value={selectedAccount}
-          onChange={(e) => setSelectedAccount(e.target.value)}
-          className="border p-2 ml-2"
-          disabled={accounts.length === 0}
-        >
-          {accounts.map((acc) => (
-            <option key={acc} value={acc}>
-              {acc}
-            </option>
-          ))}
-        </select>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* BLOQUE REGISTRO */}
+        <section className={cardStyle}>
+          <div className="absolute top-0 left-0 w-1 h-full bg-blue-600/40"></div>
+          <h3 className="text-lg font-black text-white uppercase italic tracking-tighter mb-8">
+            Ingresar Nuevo Ciudadano
+          </h3>
 
-      {/* Registro */}
-      <div className="mb-6">
-        <h3 className="font-semibold">Registrar Persona</h3>
-        {/* ... (Tus inputs de registro) */}
-        <input
-          type="text"
-          placeholder="Cédula"
-          value={cedula}
-          onChange={(e) => setCedula(e.target.value)}
-          className="border p-2 mr-2"
-        />
-        <input
-          type="text"
-          placeholder="Nombres"
-          value={nombres}
-          onChange={(e) => setNombres(e.target.value)}
-          className="border p-2 mr-2"
-        />
-        <input
-          type="text"
-          placeholder="Apellidos"
-          value={apellidos}
-          onChange={(e) => setApellidos(e.target.value)}
-          className="border p-2 mr-2"
-        />
-        <button
-          onClick={registrarPersona}
-          className="bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
-          disabled={!contract || !selectedAccount}
-        >
-          Registrar
-        </button>
-      </div>
+          <div className="space-y-6">
+            <div>
+              <label className={labelStyle}>Documento de Identidad</label>
+              <input
+                type="text"
+                placeholder="Número de Cédula"
+                value={cedula}
+                onChange={(e) => setCedula(e.target.value)}
+                className={inputStyle}
+              />
+            </div>
 
-      {/* Consulta */}
-      <div className="mb-6">
-        <h3 className="font-semibold">Consultar Persona por CI</h3>
-        <input
-          type="text"
-          placeholder="Cédula"
-          value={consultaCI}
-          onChange={(e) => setConsultaCI(e.target.value)}
-          className="border p-2 mr-2"
-        />
-        <button
-          onClick={consultarPersona}
-          className="bg-green-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
-          disabled={!contract || !selectedAccount}
-        >
-          Consultar
-        </button>
-      </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelStyle}>Nombres</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Juan"
+                  value={nombres}
+                  onChange={(e) => setNombres(e.target.value)}
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label className={labelStyle}>Apellidos</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Pérez"
+                  value={apellidos}
+                  onChange={(e) => setApellidos(e.target.value)}
+                  className={inputStyle}
+                />
+              </div>
+            </div>
 
-      {/* Resultado */}
-      {persona && persona.nombres && (
-        <div className="p-4 border rounded bg-gray-50">
-          <p>
-            <strong>Nombres:</strong> {persona.nombres}
-          </p>
-          <p>
-            <strong>Apellidos:</strong> {persona.apellidos}
-          </p>
-          <p>
-            <strong>Cédula:</strong> {persona.cedula}
-          </p>
-          <p>
-            <strong>Wallet:</strong> {persona.wallet}
-          </p>
+            <button
+              onClick={registrarPersona}
+              disabled={!contract || !selectedAccount}
+              className="w-full py-5 bg-white text-black rounded-2xl font-black text-[11px] uppercase tracking-[0.3em] hover:bg-blue-600 hover:text-white transition-all active:scale-95 disabled:opacity-20 shadow-xl"
+            >
+              Ejecutar Registro
+            </button>
+          </div>
+        </section>
+
+        {/* BLOQUE CONSULTA */}
+        <div className="space-y-8">
+          <section className={cardStyle}>
+            <div className="absolute top-0 left-0 w-1 h-full bg-green-500/40"></div>
+            <h3 className="text-lg font-black text-white uppercase italic tracking-tighter mb-8">
+              Consultar Registro Civil
+            </h3>
+
+            <div className="flex gap-3 bg-black/40 p-2 rounded-2xl border border-white/5 focus-within:border-green-500/30 transition-all">
+              <input
+                type="text"
+                placeholder="Introducir CI..."
+                value={consultaCI}
+                onChange={(e) => setConsultaCI(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none px-4 text-white font-bold placeholder:text-gray-700"
+              />
+              <button
+                onClick={consultarPersona}
+                disabled={!contract || !selectedAccount}
+                className="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all disabled:opacity-20"
+              >
+                Buscar
+              </button>
+            </div>
+          </section>
+
+          {/* RESULTADO DE BÚSQUEDA */}
+          {persona && (
+            <div className="bg-gradient-to-br from-blue-600/20 to-transparent p-[1px] rounded-[2.5rem] animate-in zoom-in-95 duration-500">
+              <div className="bg-[#0d0f14] p-8 rounded-[2.5rem] relative overflow-hidden">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-[8px] font-black text-blue-500 uppercase tracking-[0.4em] block mb-2">
+                      Expediente Encontrado
+                    </span>
+                    <h4 className="text-2xl font-black text-white uppercase italic tracking-tight">
+                      {persona.nombres} <br /> {persona.apellidos}
+                    </h4>
+                  </div>
+                  <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-3xl grayscale">
+                    👤
+                  </div>
+                </div>
+
+                <div className="mt-8 grid grid-cols-2 gap-4">
+                  <div className="bg-black/40 p-4 rounded-2xl border border-white/5">
+                    <span className="text-[7px] font-black text-gray-600 uppercase tracking-widest block mb-1">
+                      Cédula
+                    </span>
+                    <span className="text-sm font-mono font-bold text-gray-300">
+                      {persona.cedula}
+                    </span>
+                  </div>
+                  <div className="bg-black/40 p-4 rounded-2xl border border-white/5">
+                    <span className="text-[7px] font-black text-gray-600 uppercase tracking-widest block mb-1">
+                      Status Red
+                    </span>
+                    <span className="text-[9px] font-black text-green-500 uppercase tracking-widest flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>{" "}
+                      Verificado
+                    </span>
+                  </div>
+                  <div className="col-span-2 bg-black/40 p-4 rounded-2xl border border-white/5">
+                    <span className="text-[7px] font-black text-gray-600 uppercase tracking-widest block mb-1">
+                      Dirección Ledger (Wallet)
+                    </span>
+                    <span className="text-[10px] font-mono text-blue-400 break-all">
+                      {persona.wallet}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
